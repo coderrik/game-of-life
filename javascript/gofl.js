@@ -482,7 +482,7 @@ function GOFL(element) {
     widget.click(canvas_click);
   }
   canvas = widget[0];
-  spinner =  $('<img style="vertical-align: top" src="/loading.gif"/>');
+  spinner =  $('<img style="vertical-align: top" src="images/loading.gif"/>');
   spinner.hide();
   div_row = $('<div class="row"></div>');
   div_row.append(
