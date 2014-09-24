@@ -301,8 +301,7 @@ function GOFL(element) {
       }
 
       loaded_pattern = pattern;
-
-      stats_filename.html(filename);
+      stats_filename.html(filename.split('/').reverse()[0]);
       stats_filesize.html(content_length + ' bytes');
       stats_dimensions.html(pattern.width + 'x' + pattern.height);
       stats_author.html(author);
