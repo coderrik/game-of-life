@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+
+<!-- Bootstrap slider theme -->
+<link rel="stylesheet" href="/game-of-life/javascript/bootstrap-slider-4.0.1/css/bootstrap-slider.css">
+
+<!-- Bootstrap slider JavaScript -->
+<script src="/game-of-life/javascript/bootstrap-slider-4.0.1/js/bootstrap-slider.js"></script>
+
+<!-- GOFL JavaScript -->
+<script src="/game-of-life/javascript/gofl.js"></script>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Game of Life - Introduction 2/5</title>
+
+</head>
+
+<body>
+
+  <nav class="navbar navbar-default" role="navigation">
+    <div class="container-fluid">
+      <!-- Brand and toggle get grouped for better mobile display -->
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="./"><img style="margin-top: -10px" width="40" height="40" src="images/brand.png"></a>
+      </div>
+
+      <!-- Collect the nav links, forms, and other content for toggling -->
+      <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+        <ul class="nav navbar-nav">
+          <li><a href="introduction-1.html">Introduction</a></li>
+        </ul>
+        <ul class="nav navbar-nav">
+          <li><a href="http://github.com/coderrik/game-of-life">GitHub</a></li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
+          <li><a href="about-this-game-of-life.html">About</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+<div class="container">
+  <div class="page-header">
+    <h1>Introduction 2/5</h1>
+  </div>
+
+  <ul class="pagination">
+    <li><a href="introduction-1.html">&laquo;</a></li>
+    <li><a href="introduction-1.html">1</a></li>
+    <li class="active"><a href="introduction-2.html">2</a></li>
+    <li><a href="introduction-3.html">3</a></li>
+    <li><a href="introduction-4.html">4</a></li>
+    <li><a href="introduction-5.html">5</a></li>
+    <li><a href="introduction-3.html">&raquo;</a></li>
+  </ul>
+
+  <h3>One Cell</h3>
+  <hr style="margin-top: 0">
+
+  <div id="pattern1" class="gofl" data-stats-show="false" data-speed-show="false" data-clear-show="false" data-randomise-show="false" data-url="/life/patterns/one.lif" data-wrap="false" data-editable="false">This is pretty dull. Click <b>Start</b> and you'll see our lone cell dies because it has fewer than two live neighbours.</div>
+
+  <h3>Two Cells</h3>
+  <hr style="margin-top: 0">
+
+  <div id="pattern2" class="gofl" data-stats-show="false" data-speed-show="false" data-clear-show="false" data-randomise-show="false" data-url="/life/patterns/two.lif" data-wrap="false" data-editable="false">This is also pretty dull. Click <b>Start</b> and you'll see both cells dies because each has fewer than two live neighbours.</div>
+
+  <h3>Three Cells - The Blinker</h3>
+  <hr style="margin-top: 0">
+
+  <div id="pattern3" class="gofl" data-stats-show="false" data-speed-show="false" data-clear-show="false" data-randomise-show="false" data-url="/life/patterns/three.lif" data-wrap="false" data-editable="false">
+    <p>This is... interesting? Click <b>Start</b> and you'll that the pattern <i>oscillates</i>.</p>
+    <p>On the first generation:</p>
+    <ul>
+      <li>The centre cell remains alive because any cell with two or three neighbours lives.</li>
+      <li>The top and bottom cells both die because any cell with fewer than two live neighbours dies.</li>
+      <li>The left and right cells are both born because any dead cell with exactly three neighbours becomes a live cell.</li>
+    </ul>
+    <p>This is inverted on the second generation and again on the third and so on..</p>
+    <p>The Life world has its own rich lexicon. An <i>oscillator</i> is a pattern that repeats itself after a fixed number of generations (this is the period). This particular oscillator is called a <b>Blinker</b> and has a period of 2.</p>
+  </div>
+
+  <ul class="pagination">
+    <li><a href="introduction-1.html">&laquo;</a></li>
+    <li><a href="introduction-1.html">1</a></li>
+    <li class="active"><a href="introduction-2.html">2</a></li>
+    <li><a href="introduction-3.html">3</a></li>
+    <li><a href="introduction-4.html">4</a></li>
+    <li><a href="introduction-5.html">5</a></li>
+    <li><a href="introduction-3.html">&raquo;</a></li>
+  </ul>
+
+</body>
+
+</html>

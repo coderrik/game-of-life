@@ -47,6 +47,12 @@ function GOFL(element) {
   var world_height = 50;
   var world_scaling = 6;
 
+  // padding around pattern - some need space to grow
+  var padding_left = 3;
+  var padding_right = 3;
+  var padding_top = 3;
+  var padding_bottom = 3;
+
   // pointers to two world arrays - old world, new world
   var active_world = 0;
   var inactive_world = 1;
@@ -250,8 +256,8 @@ function GOFL(element) {
 
   // map pattern to world, scaling to fit viewport
   var apply_pattern = function(pattern) {
-    var pattern_width_scaling = canvas_width/(pattern.width+6);
-    var pattern_height_scaling = canvas_height/(pattern.height+6);
+    var pattern_width_scaling = canvas_width/(pattern.width+padding_left+padding_right);
+    var pattern_height_scaling = canvas_height/(pattern.height+padding_top+padding_bottom);
     var pattern_scaling = (pattern_width_scaling < pattern_height_scaling) ? pattern_width_scaling : pattern_height_scaling;
 
     world_scaling = Math.floor(pattern_scaling);
@@ -262,8 +268,8 @@ function GOFL(element) {
     world[active_world] = init_array(world_width, world_height);
     world[inactive_world] = init_array(world_width, world_height);
 
-    var shift_x = Math.floor((world_width-pattern.width)/2);
-    var shift_y = Math.floor((world_height-pattern.height)/2);
+    var shift_x = Math.floor((world_width-(pattern.width+padding_left+padding_right))/2)+padding_left;
+    var shift_y = Math.floor((world_height-(pattern.height+padding_top+padding_bottom))/2)+padding_top;
 
     for(var x = 0; x < pattern.width; x++) {
       for(var y = 0; y < pattern.height; y++) {
@@ -306,7 +312,7 @@ function GOFL(element) {
     pattern.width = (Math.abs(minx)+Math.abs(maxx)+1);
     pattern.height = (Math.abs(miny)+Math.abs(maxy)+1);
 
-    if(pattern.width > canvas_width || pattern.height > canvas_height) {
+    if((pattern.width+padding_right+padding_left) > canvas_width || (pattern.height+padding_top+padding_bottom) > canvas_height) {
       flash.html('Pattern \"' + filename + '\" is too large or an invalid format.');
       flash.show();
       loaded_pattern = null;
@@ -384,12 +390,12 @@ function GOFL(element) {
 
     // turn any 'www....' into links
     descr = descr.replace(/\r/,'');
-    descr = descr.replace(/([http:\/\/]*www\.[A-Z|a-z|-|0-9]+\.[A-Z|a-z|0-9|_|\-|\/|\?|\.|\=]+)/,' <a target="_blank" href="http://\$1">\$1</a>');
+    descr = descr.replace(/[http:\/\/]*(www\.[A-Z|a-z|-|0-9]+\.[A-Z|a-z|0-9|\(|\)_|\-|\/|\?|\.|\=]+)/,' <a target="_blank" href="http://\$1">\$1</a>');
 
     pattern.width = (Math.abs(minx)+Math.abs(maxx)+1);
     pattern.height = (Math.abs(miny)+Math.abs(maxy)+1);
 
-    if(pattern.width > canvas_width || pattern.height > canvas_height) {
+    if((pattern.width+padding_right+padding_left) > canvas_width || (pattern.height+padding_top+padding_bottom) > canvas_height) {
       flash.html('Pattern \"' + filename + '\" is too large or an invalid format.');
       flash.show();
       loaded_pattern = null;
@@ -630,7 +636,7 @@ function GOFL(element) {
     viewport.click(canvas_click);
   }
   canvas = viewport[0];
-  spinner =  $('<img style="vertical-align: top" src="images/loading.gif"/>');
+  spinner =  $('<img style="vertical-align: top" src="' + $('script[src$="gofl.js"]').attr('src').replace(/gofl.js/,'../images/loading.gif') + '"/>');
   spinner.hide();
   div_row = $('<div class="row"></div>');
   div_row.append(
@@ -706,6 +712,20 @@ function GOFL(element) {
   }
   
   $(element).append(div_row);
+
+  // set padding
+  if($(element).attr('data-padding-left')) {
+    padding_left = parseInt($(element).attr('data-padding-left'));
+  }
+  if($(element).attr('data-padding-right')) {
+    padding_right = parseInt($(element).attr('data-padding-right'));
+  }
+  if($(element).attr('data-padding-top')) {
+    padding_top = parseInt($(element).attr('data-padding-top'));
+  }
+  if($(element).attr('data-padding-bottom')) {
+    padding_bottom = parseInt($(element).attr('data-padding-bottom'));
+  }
 
   // load pattern or default world
   if($(element).attr('data-url')) {

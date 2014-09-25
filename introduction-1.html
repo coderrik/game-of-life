@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+
 <!-- Latest compiled and minified CSS -->
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
 
@@ -25,7 +26,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Game of Life</title>
+<title>Game of Life - Introduction 1/5</title>
 
 </head>
 
@@ -61,25 +62,45 @@
 
 <div class="container">
   <div class="page-header">
-    <h1>The Game of Life</h1>
+    <h1>Introduction 1/5</h1>
   </div>
 
-  <table class="table table-striped">
-    <tr>
-      <td><a href="introduction-1.html">Introduction</a></td>
-      <td>An introduction to Conway's Game of Life</td>
-    </tr>
-    <tr>
-      <td><a href="about-this-game-of-life.html">About</a></td>
-      <td>About this website</td>
-    </tr>
-    <tr>
-      <td><a href="introduction-5.html">Have A Go!</a></td>
-      <td>A small editable life environment</td>
-    </tr>
-  <table>
+  <ul class="pagination">
+    <li class="disabled"><a href="#">&laquo;</a></li>
+    <li class="active"><a href="introduction-1.html">1</a></li>
+    <li><a href="introduction-2.html">2</a></li>
+    <li><a href="introduction-3.html">3</a></li>
+    <li><a href="introduction-4.html">4</a></li>
+    <li><a href="introduction-5.html">5</a></li>
+    <li><a href="introduction-2.html">&raquo;</a></li>
+  </ul>
 
-</div>
+  <p>Here are the rules:</p>
+
+  <p>1. Any live cell with fewer than two live neighbours <b>dies</b>, as if caused by under-population.</p>
+  <img src="images/rule1.png">
+
+  <p>2. Any live cell with two or three live neighbours <b>lives</b> on to the next generation.</p>
+  <img src="images/rule2.png">
+
+  <p>3. Any live cell with more than three live neighbours <b>dies</b>, as if by overcrowding.</p>
+  <img src="images/rule3.png">
+
+  <p>4. Any dead cell with exactly three live neighbours becomes a live cell, as if by <b>reproduction</b>.</p>
+  <img src="images/rule4.png">
+
+  <p>This just shows the lifecycle of the cell in the centre. The pattern on the right would generally be different as the other cells in the pattern are also evolved at the same time.</p>
+
+  <ul class="pagination">
+    <li class="disabled"><a href="#">&laquo;</a></li>
+    <li class="active"><a href="introduction-1.html">1</a></li>
+    <li><a href="introduction-2.html">2</a></li>
+    <li><a href="introduction-3.html">3</a></li>
+    <li><a href="introduction-4.html">4</a></li>
+    <li><a href="introduction-5.html">5</a></li>
+    <li><a href="introduction-2.html">&raquo;</a></li>
+  </ul>
+
 </body>
 
 </html>
