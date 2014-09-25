@@ -12,6 +12,7 @@ function GOFL(element) {
   var button_stop = null;
   var button_start = null;
   var button_reset = null;
+  var button_clear = null;
   var button_randomise = null;
   var slider = null;
   var spinner = null;
@@ -137,7 +138,7 @@ function GOFL(element) {
     }
     interval = setInterval(animate, 200*(6-speed));
     spinner.show();
-  }
+  };
 
   // stop animation
   var stop = function() {
@@ -146,13 +147,26 @@ function GOFL(element) {
     }
     interval = null;
     spinner.hide();
-  }
+  };
+
+  // clear all cells
+  var clear = function() {
+    world[active_world] = init_array(world_width, world_height);
+    world[inactive_world] = init_array(world_width, world_height);
+    stats_filename.html('');
+    stats_filesize.html('');
+    stats_dimensions.html('');
+    stats_author.html('');
+    stats_name.html('');
+    stats_description.html('');
+    draw_world();
+  };
 
   // animate - draw cells, advance, repeat
   var animate = function() {
     draw_world();
     advance();
-  }
+  };
 
   // redraw loaded pattern or clear cells
   var reset = function() {
@@ -257,7 +271,72 @@ function GOFL(element) {
       }
     }
 
+    stats_filename.html(pattern.filename);
+    stats_filesize.html(pattern.filesize);
+    stats_dimensions.html(pattern.dimensions);
+    stats_author.html(pattern.author);
+    stats_name.html(pattern.name);
+    stats_description.html(pattern.description);
+
     draw_world();
+  };
+
+  // load patterns in Life 1.06 format
+  var load_pattern106 = function(data, filename, content_length) {
+    var pattern = { cells: [] };
+
+    // determine width & height
+    var minx = Number.MAX_VALUE;
+    var maxx = Number.MIN_VALUE;
+    var miny = Number.MAX_VALUE;
+    var maxy = Number.MIN_VALUE;
+    for(var i = 0; i < data.length; i++) {
+      if(data[i][0] != "#" && data[i] != "") {
+        var coords = data[i].split(" ");
+        var xcoord = parseInt(coords[0]);
+        var ycoord = parseInt(coords[1]);
+
+        if(xcoord > maxx) { maxx = xcoord; }
+        if(xcoord < minx) { minx = xcoord; }
+        if(ycoord > maxy) { maxy = ycoord; }
+        if(ycoord < miny) { miny = ycoord; }
+      }
+    }
+
+    pattern.width = (Math.abs(minx)+Math.abs(maxx)+1);
+    pattern.height = (Math.abs(miny)+Math.abs(maxy)+1);
+
+    if(pattern.width > canvas_width || pattern.height > canvas_height) {
+      flash.html('Pattern \"' + filename + '\" is too large or an invalid format.');
+      flash.show();
+      loaded_pattern = null;
+    } else {
+      pattern.cells = init_array(pattern.width, pattern.height);
+
+      // populate and shift origin to 0,0
+      for(var i = 0; i < data.length; i++) {
+        if(data[i][0] != "#" && data[i] != "") {
+          var coords = data[i].split(" ");
+          var xcoord = parseInt(coords[0])+Math.abs(minx);
+          var ycoord = parseInt(coords[1])+Math.abs(miny);
+
+          if(data[i][0] != "#" && data[i] != "") {
+            pattern.cells[xcoord][ycoord]=1;
+          }
+        }
+      }
+
+      pattern.filename = filename.split('/').reverse()[0];
+      pattern.filesize = content_length + ' bytes';
+      pattern.dimensions = pattern.width + 'x' + pattern.height;
+      pattern.author = '';
+      pattern.name = '';
+      pattern.description = '';
+
+      loaded_pattern = pattern;
+
+      apply_pattern(pattern);
+    }
   };
 
   // load patterns in Life 1.05 format
@@ -337,13 +416,15 @@ function GOFL(element) {
         }
       }
 
+      pattern.filename = filename.split('/').reverse()[0];
+      pattern.filesize = content_length + ' bytes';
+      pattern.dimensions = pattern.width + 'x' + pattern.height;
+      pattern.author = author;
+      pattern.name = name;
+      pattern.description = descr;
+
       loaded_pattern = pattern;
-      stats_filename.html(filename.split('/').reverse()[0]);
-      stats_filesize.html(content_length + ' bytes');
-      stats_dimensions.html(pattern.width + 'x' + pattern.height);
-      stats_author.html(author);
-      stats_name.html(name);
-      stats_description.html(descr);
+
       apply_pattern(pattern);
     }
   };
@@ -498,6 +579,12 @@ function GOFL(element) {
     button_randomise.hide();
   }
 
+  button_clear = $('<button type="button" class="btn btn-warning">Clear</button>');
+  button_clear.click(clear);
+  if($(element).attr('data-clear-show') == 'false') {
+    button_clear.hide();
+  }
+
   button_stop = $('<button type="button" class="btn btn-danger">Stop</button>');
   button_stop.click(stop);
   if($(element).attr('data-stop-show') == 'false') {
@@ -516,6 +603,10 @@ function GOFL(element) {
       '\n'
     ).append(
       button_randomise
+    ).append(
+      '\n'
+    ).append(
+      button_clear
     ).append(
       '\n'
     ).append(
