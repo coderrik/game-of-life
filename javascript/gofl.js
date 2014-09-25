@@ -1,4 +1,65 @@
+// <div id="pattern"
+//      class="gofl"
+//      data-randomise-show="false"
+//      data-url="/patterns/washerwoman_105.lif"
+//      data-wrap="false"
+//      data-editable="false"></div>
 function GOFL(element) {
+  // main components
+  var viewport = null;
+  var canvas = null;
+  var flash = null;
+  var button_stop = null;
+  var button_start = null;
+  var button_reset = null;
+  var button_randomise = null;
+  var slider = null;
+  var spinner = null;
+
+  // components to hold pattern meta-data
+  var stats_filename = null;
+  var stats_filesize = null;
+  var stats_dimensions = null;
+  var stats_author = null;
+  var stats_name = null;
+  var stats_description = null;
+
+  // drawing context for cavas
+  var context = null;
+
+  // default sizes
+  var canvas_width = 480;
+  var canvas_height = 320;
+
+  // html between <div class="gofl"></div> if any
+  var description = '';
+
+  // pattern array
+  var loaded_pattern = null;
+
+  // wrap the canvas
+  var wrap = true;
+
+  // 3-d array to hold cells
+  var world = null;
+  var world_width = 50;
+  var world_height = 50;
+  var world_scaling = 6;
+
+  // pointers to two world arrays - old world, new world
+  var active_world = 0;
+  var inactive_world = 1;
+
+  // controls animation delay
+  var speed = 3;
+
+  // timer interval
+  var interval = null;
+
+  // default bootstrap environment
+  var be = 'md';
+
+  // canvas widths for different devices
   var best_widths = {
     'xs' : 320,
     'sm' : 320,
@@ -6,6 +67,7 @@ function GOFL(element) {
     'lg' : 480
   };
 
+  // canvas heights for different devices
   var best_heights = {
     'xs' : 240,
     'sm' : 240,
@@ -13,7 +75,9 @@ function GOFL(element) {
     'lg' : 360
   };
 
-  var findBootstrapEnvironment = function() {
+  // finds bootstrap environment type
+  // https://stackoverflow.com/questions/14441456/how-to-detect-which-device-view-youre-on-using-twitter-bootstrap-api
+  var bootstrap_environment = function() {
     var envs = ['xs', 'sm', 'md', 'lg'];
 
     $el = $('<div>');
@@ -30,54 +94,16 @@ function GOFL(element) {
     }
   };
 
-  function getParameterByName(name) {
+  // fetches value for a url parameter
+  // https://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript/901144#901144
+  function parameter_value(name) {
     name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
     var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
       results = regex.exec(location.search);
     return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
   }
 
-  var be = findBootstrapEnvironment();
-
-  var description = $(element).html();
-  $(element).html('');
-
-  var widget = null;
-  var canvas = null;
-  var flash = null;
-  var button_stop = null;
-  var button_start = null;
-  var button_reset = null;
-  var button_randomise = null;
-  var slider = null;
-  var canvas_width = best_widths[be];
-  var canvas_height = best_heights[be];
-  var spinner = null;
-
-  var context = null;
-
-  var loaded_pattern = null;
-
-  var wrap = true;
-
-  var world = null;
-  var world_width = 50;
-  var world_height = 50;
-  var world_scaling = 6;
-
-  var active_world = 0;
-  var inactive_world = 1;
-
-  var speed = 3;
-  var interval = null;
-
-  if($(element).attr('data-width')) {
-    canvas_width = $(element).attr('data-width');
-  }
-  if($(element).attr('data-height')) {
-    canvas_height = $(element).attr('data-height');
-  }
-
+  // create and initialize an array with zeroes
   var init_array = function(array_width, array_height) {
     var array = new Array(array_width);
     for(var col = 0; col < array_width; col++) {
@@ -89,6 +115,7 @@ function GOFL(element) {
     return array;
   };
 
+  // clear canvas and draw active cells
   var draw_world = function() {
     context.clearRect(0, 0, context.canvas.width, context.canvas.height);
     for(var x = 0; x < world_width; x++) {
@@ -103,6 +130,7 @@ function GOFL(element) {
     }
   };
 
+  // start animation
   var start = function() {
     if(interval != null) {
       clearInterval(interval);
@@ -111,6 +139,7 @@ function GOFL(element) {
     spinner.show();
   }
 
+  // stop animation
   var stop = function() {
     if(interval != null) {
       clearInterval(interval);
@@ -119,11 +148,13 @@ function GOFL(element) {
     spinner.hide();
   }
 
+  // animate - draw cells, advance, repeat
   var animate = function() {
     draw_world();
     advance();
   }
 
+  // redraw loaded pattern or clear cells
   var reset = function() {
     if(loaded_pattern != null) {
       apply_pattern(loaded_pattern);
@@ -134,6 +165,7 @@ function GOFL(element) {
     draw_world();
   };
 
+  // draw some random (kind of) cells
   var randomise = function() {
     for(var x = 0; x < world_width; x++) {
       for(var y = 0; y < world_height; y++) {
@@ -143,13 +175,15 @@ function GOFL(element) {
     draw_world();
   };
 
+  // draw a cell on the canvas
   var canvas_click = function(e) {
-    var world_x = Math.floor((e.pageX-widget.offset().left)/world_scaling);
-    var world_y = Math.floor((e.pageY-widget.offset().top)/world_scaling);
+    var world_x = Math.floor((e.pageX-viewport.offset().left)/world_scaling);
+    var world_y = Math.floor((e.pageY-viewport.offset().top)/world_scaling);
     world[active_world][world_x][world_y] = 1-world[active_world][world_x][world_y];
     draw_world(); 
   };
 
+  // game of life algorithm
   var advance = function() {
     for(var x = 0; x < world_width; x++) {
       for(var y = 0; y < world_height; y++) {
@@ -200,6 +234,7 @@ function GOFL(element) {
     inactive_world = 1-inactive_world;
   };
 
+  // map pattern to world, scaling to fit viewport
   var apply_pattern = function(pattern) {
     var pattern_width_scaling = canvas_width/(pattern.width+6);
     var pattern_height_scaling = canvas_height/(pattern.height+6);
@@ -225,6 +260,7 @@ function GOFL(element) {
     draw_world();
   };
 
+  // load patterns in Life 1.05 format
   var load_pattern105 = function(data, filename, content_length) {
     var pattern = { cells: [] };
 
@@ -232,7 +268,6 @@ function GOFL(element) {
     var descr = "";
     var author = "";
 
-    // determine width & height
     var minx = Number.MAX_VALUE;
     var maxx = Number.MIN_VALUE;
     var miny = Number.MAX_VALUE;
@@ -267,6 +302,8 @@ function GOFL(element) {
         }
       }
     }
+
+    // turn any 'www....' into links
     descr = descr.replace(/\r/,'');
     descr = descr.replace(/([http:\/\/]*www\.[A-Z|a-z|-|0-9]+\.[A-Z|a-z|0-9|_|\-|\/|\?|\.|\=]+)/,' <a target="_blank" href="http://\$1">\$1</a>');
 
@@ -311,6 +348,7 @@ function GOFL(element) {
     }
   };
 
+  // load patterns in Life 1.06 format
   var load_pattern106 = function(data, filename, content_length) {
     var pattern = { cells: [] };
 
@@ -368,6 +406,7 @@ function GOFL(element) {
     }
   };
 
+  // load pattern from url
   var load_pattern = function(url) {
     $.ajax({
       url: url,
@@ -391,6 +430,7 @@ function GOFL(element) {
     });
   };
 
+  // slider slided - change speed and restart animation
   var slide = function(arg) {
     speed = arg.value;
     if(interval != null) {
@@ -399,7 +439,25 @@ function GOFL(element) {
     }
   };
 
-  // speed
+
+  // clear and store the description
+  description = $(element).html();
+  $(element).html('');
+
+  // determine canvas dimensions
+  be = bootstrap_environment();
+  if($(element).attr('data-width')) {
+    canvas_width = $(element).attr('data-width');
+  } else {
+    canvas_width = best_widths[be];
+  }
+  if($(element).attr('data-height')) {
+    canvas_height = $(element).attr('data-height');
+  } else {
+    canvas_height = best_heights[be];
+  }
+
+  // slider component
   slider = $('<input data-slider-tooltip="hide" type="text" data-slider-min="1" data-slider-max="5" data-slider-step="1" data-slider-value="3"/>');
   if($(element).attr('data-wrap') != undefined) {
     if($(element).attr('data-wrap') == "false") {
@@ -421,7 +479,7 @@ function GOFL(element) {
   $(element).append(div_row);
   slider.slider().on('slideStop', slide);
 
-  // buttons
+  // button components
   button_start = $('<button type="button" class="btn btn-primary">Start</button>');
   button_start.click(start);
   if($(element).attr('data-start-show') == 'false') {
@@ -466,7 +524,7 @@ function GOFL(element) {
   );
   $(element).append(div_row);
 
-  // flash
+  // flash component
   flash = $('<div class="alert alert-danger" style="width: ' + canvas_width + 'px"></div>');
   div_row = $('<div class="row"></div>');
   div_row.append(
@@ -475,12 +533,12 @@ function GOFL(element) {
   flash.hide();
   $(element).append(div_row);
 
-  // canvas || stats
-  widget = $('<canvas style="background-color: grey" width="' + canvas_width + '" height="' + canvas_height + '"></canvas>');
+  // canvas component
+  viewport = $('<canvas style="background-color: grey" width="' + canvas_width + '" height="' + canvas_height + '"></canvas>');
   if($(element).attr('data-editable') != 'false') {
-    widget.click(canvas_click);
+    viewport.click(canvas_click);
   }
-  canvas = widget[0];
+  canvas = viewport[0];
   spinner =  $('<img style="vertical-align: top" src="images/loading.gif"/>');
   spinner.hide();
   div_row = $('<div class="row"></div>');
@@ -489,14 +547,17 @@ function GOFL(element) {
       .append(' ')
       .append(spinner)
   );
+  context = canvas.getContext('2d');
+  context.shadowBlur = 0;
+  context.fillStyle='red';
 
-
-  var stats_filename = $('<span/>');
-  var stats_filesize = $('<span/>');
-  var stats_dimensions = $('<span/>');
-  var stats_author = $('<span/>');
-  var stats_name = $('<span/>');
-  var stats_description = $('<span/>');
+  // stats components
+  stats_filename = $('<span/>');
+  stats_filesize = $('<span/>');
+  stats_dimensions = $('<span/>');
+  stats_author = $('<span/>');
+  stats_name = $('<span/>');
+  stats_description = $('<span/>');
   if($(element).attr('data-stats-show') != 'false') {
     div_row.append(
       $('<div class="col-md-6"/>').append(
@@ -555,16 +616,11 @@ function GOFL(element) {
   
   $(element).append(div_row);
 
-  // end table
-
-  context = canvas.getContext('2d');
-  context.shadowBlur = 0;
-  context.fillStyle='red';
-
+  // load pattern or default world
   if($(element).attr('data-url')) {
     load_pattern($(element).attr('data-url'))
   } else if($(element).attr('data-param')) {
-    load_pattern(getParameterByName($(element).attr('data-param')));
+    load_pattern(parameter_value($(element).attr('data-param')));
   } else {
     world_scaling = 12;
     world_width = Math.floor(canvas_width/world_scaling);
@@ -576,11 +632,10 @@ function GOFL(element) {
   }
 };
 
-var gofl_ready = function() {
+$(document).ready(function() {
   var gofls = $('.gofl');
   for(var i = 0; i < gofls.length; i++) {
     new GOFL(gofls[i]);
   }
-};
+});
 
-$(document).ready(gofl_ready);
