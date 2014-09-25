@@ -636,7 +636,8 @@ function GOFL(element) {
     viewport.click(canvas_click);
   }
   canvas = viewport[0];
-  spinner =  $('<img style="vertical-align: top" src="' + $('script[src$="gofl.js"]').attr('src').replace(/gofl.js/,'../images/loading.gif') + '"/>');
+  //spinner =  $('<img style="vertical-align: top" src="' + $('script[src$="gofl.js"]').attr('src').replace(/gofl.js/,'../images/loading.gif') + '"/>');
+  spinner =  $('<img style="vertical-align: top" src="images/loading.gif"/>');
   spinner.hide();
   div_row = $('<div class="row"></div>');
   div_row.append(
