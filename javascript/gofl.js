@@ -553,7 +553,14 @@ function GOFL(element) {
   }
 
   // slider component
-  slider = $('<input data-slider-tooltip="hide" type="text" data-slider-min="1" data-slider-max="5" data-slider-step="1" data-slider-value="3"/>');
+  if($(element).attr('data-speed')) {
+    speed = parseInt($(element).attr('data-speed'));
+    if(speed < 1 || speed > 5) {
+      speed = 3;
+    }
+  }
+
+  slider = $('<input data-slider-tooltip="hide" type="text" data-slider-min="1" data-slider-max="5" data-slider-step="1" data-slider-value="' + speed + '"/>');
   if($(element).attr('data-wrap') != undefined) {
     if($(element).attr('data-wrap') == "false") {
       wrap = false;
