@@ -423,7 +423,11 @@ function GOFL(element) {
       }
 
       pattern.filename = filename.split('/').reverse()[0];
-      pattern.filesize = content_length + ' bytes';
+      if(content_length) {
+        pattern.filesize = content_length + ' bytes';
+      } else {
+        pattern.filesize = '';
+      }
       pattern.dimensions = pattern.width + 'x' + pattern.height;
       pattern.author = author;
       pattern.name = name;
@@ -480,14 +484,18 @@ function GOFL(element) {
         }
       }
 
-      loaded_pattern = pattern;
+      pattern.filename = filename.split('/').reverse()[0];
+      if(content_length) {
+        pattern.filesize = content_length + ' bytes';
+      } else {
+        pattern.filesize = '';
+      }
+      pattern.dimensions = pattern.width + 'x' + pattern.height;
+      pattern.author = '';
+      pattern.name = '';
+      pattern.description = '';
 
-      stats_filename.html(filename);
-      stats_filesize.html(content_length + ' bytes');
-      stats_dimensions.html(pattern.width + 'x' + pattern.height);
-      stats_author.html('');
-      stats_name.html('');
-      stats_description.html('');
+      loaded_pattern = pattern;
 
       apply_pattern(pattern);
     }
