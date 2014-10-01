@@ -77,9 +77,11 @@ function Life(element) {
       },
 
       square : function(x, y, size) {
+        this.context.beginPath();
         this.context.rect(x, y, size, size);
         this.context.fill();
         this.context.stroke();
+        this.context.closePath();
       },
 
       onclick : function(f) {
@@ -92,7 +94,6 @@ function Life(element) {
 
       clear : function() {
         this.context.clearRect(0, 0, this.width, this.height);
-        this.context.beginPath();
       }
     },
 
@@ -370,17 +371,17 @@ function Life(element) {
                      var cellx = translate.x+P.x+x;
                      var celly = translate.y+P.y+y;
 
-                     if(cellx < this.x1) { this.x1 = cellx };
-                     if(cellx > this.x2) { this.x2 = cellx };
-                     if(celly < this.y1) { this.y1 = celly };
-                     if(celly > this.y2) { this.y2 = celly };
+                     if(cellx >= 0 && cellx < this.width && celly >= 0 && celly < this.height) {
+                       if(cellx < this.x1) { this.x1 = cellx };
+                       if(cellx > this.x2) { this.x2 = cellx };
+                       if(celly < this.y1) { this.y1 = celly };
+                       if(celly > this.y2) { this.y2 = celly };
 
-                     if(data[i].charAt(x) == '*') {
-                       if(cellx >= 0 && cellx < this.width && celly >= 0 && celly < this.height) {
+                       if(data[i].charAt(x) == '*') {
                          this.cells[cellx][celly] = 1;
-                       } else {
-                         this.clipped++;
                        }
+                     } else {
+                       this.clipped++;
                      }
                    }
                    y++;
@@ -602,6 +603,10 @@ function Life(element) {
         world.load(p);
         focus();
         ui.stats(pattern.filename, pattern.filesize, pattern.dimensions, pattern.author, pattern.name, pattern.description);
+        if(p.clipped > 0) {
+          ui.flash.html('Warning: ' + p.clipped + ' point' + (p.clipped == 1 ? '' : 's') + ' clipped');
+          ui.flash.show();
+        }
         redraw();
       },
       function(m) {
@@ -697,14 +702,14 @@ function Life(element) {
       ui.canvas.widget
     ).append(
       ' '
-    ).append(
-      $('<div class="btn-group-vertical btn-group-sm">').append(
-        ui.button_zoomin
-      ).append(
-        ui.button_zoomout
-      )
-    ).append( 
-      ' '
+//    ).append(
+//      $('<div class="btn-group-vertical btn-group-sm">').append(
+//        ui.button_zoomin
+//      ).append(
+//        ui.button_zoomout
+//      )
+//    ).append( 
+//      ' '
     ).append(
       ui.spinner
     )
