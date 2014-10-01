@@ -12,46 +12,6 @@ function Life(element) {
   // timer interval
   var interval = null;
 
-  var typeahead = {
-    input : null,
-
-    button_load : null,
-
-    patterns : {},
-
-    _onsubmit : null,
-
-    init : function() {
-      this.input = $('<input type="text" data-provide="typeahead" autocomplete="off">');
-      this.button_load = $('<button type="button" class="btn btn-default">Load</button>');
-      this.button_load.click($.proxy(this.submit,this));
-    },
-
-    submit : function() {
-      if(this._onsubmit) {
-        this._onsubmit(this.patterns[this.input.val()]);
-      }
-    },
-
-    onsubmit : function(f) {
-      this._onsubmit = f;
-    },
-
-    load : function(url) {
-      $.ajax({
-         url: url,
-         type: 'GET',
-         context: this,
-         dataType: 'json',
-
-         success: function(response, status, request) {
-           this.patterns = response;
-           this.input.typeahead({source: Object.keys(this.patterns)});
-         }
-       });
-    }
-  };
-
   // UI components
   var ui = {
     flash : null,
@@ -667,23 +627,6 @@ function Life(element) {
       height:    $(element).attr('data-height')
     }
   );
-
-  typeahead.init();
-  typeahead.onsubmit(function(filename) {
-    load_pattern('/patterns/' + filename)
-  });
-  div_row = $('<div class="row"></div>');
-  div_row.append(
-    $('<div class="col-md-6"/>').append(
-      typeahead.input
-    ).append(
-      ' '
-    ).append(
-      typeahead.button_load
-    )
-  );
-  $(element).append(div_row);
-  typeahead.load('/patterns/patterns.json');
 
   div_row = $('<div class="row" style="padding-bottom:5px"></div>');
   div_row.append(
