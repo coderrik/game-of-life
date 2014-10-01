@@ -1,0 +1,1029 @@
+function Life(element) {
+
+  // UI components
+  var ui = {
+    flash : null,
+    button_stop : null,
+    button_start : null,
+    button_reset : null,
+    button_clear : null,
+    button_randomize : null,
+    button_zoomin : null,
+    button_zoomout : null,
+    slider : null,
+    spinner : null,
+
+    stats_filename : null,
+    stats_filesize : null,
+    stats_diemnsions : null,
+    stats_author : null,
+    stats_name : null,
+    stats_description : null,
+
+    speed : 3,
+
+    init : function(pWidth, pSpeed, options) {
+      this.flash = $('<div class="alert alert-danger" style="width: ' + pWidth + 'px"></div>');
+      this.flash.hide();
+
+      this.button_start = $('<button type="button" class="btn btn-primary">Start</button>');
+      if(!options.start) { this.button_start.hide(); }
+
+      this.button_reset = $('<button type="button" class="btn btn-primary">Reset</button>');
+      if(!options.reset) { this.button_reset.hide(); }
+
+      this.button_randomize = $('<button type="button" class="btn btn-primary">Randomize</button>');
+      if(!options.randomize) { this.button_randomize.hide(); }
+
+      this.button_clear = $('<button type="button" class="btn btn-warning">Clear</button>');
+      if(!options.clear) { this.button_clear.hide(); }
+
+      this.button_stop = $('<button type="button" class="btn btn-danger">Stop</button>');
+      if(!options.stop) { this.button_stop.hide(); }
+
+      this.button_zoomin = $('<button type="button" class="btn btn-default"><span class="glyphicon glyphicon-plus"></span></button>');
+      this.button_zoomout = $('<button type="button" class="btn btn-default"><span class="glyphicon glyphicon-minus"></span></button>');
+
+      this.stats_filename = $('<span/>');
+      this.stats_filesize = $('<span/>');
+      this.stats_dimensions = $('<span/>');
+      this.stats_author = $('<span/>');
+      this.stats_name = $('<span/>');
+      this.stats_description = $('<span/>');
+
+      if(pSpeed) {
+        var s = parseInt(pSpeed);
+        if(s => 1  || s <= 5) {
+          this.speed = s;
+        }
+      }
+      this.slider = $('<input data-slider-tooltip="hide" type="text" data-slider-min="1" data-slider-max="5" data-slider-step="1" data-slider-value="' + this.speed + '"/>');
+
+      this.spinner =  $('<img style="vertical-align: top" src="images/loading.gif"/>');
+      this.spinner.hide();
+    },
+
+    onstart : function(f) { this.button_start.click(f); },
+
+    onstop : function(f) { this.button_stop.click(f); },
+
+    onclear : function(f) { this.button_clear.click(f); },
+
+    onrandomize : function(f) { this.button_randomize.click(f); },
+
+    onreset : function(f) { this.button_reset.click(f); },
+
+    onzoomin : function(f) { this.button_zoomin.click(f); },
+
+    onzoomout : function(f) { this.button_zoomout.click(f); },
+
+    stats : function(filename, filesize, dimensions, author, name, description) {
+      this.stats_filename.html(filename);
+      this.stats_filesize.html(filesize);
+      this.stats_dimensions.html(dimensions);
+      this.stats_author.html(author);
+      this.stats_name.html(name);
+      this.stats_description.html(description);
+    },
+
+    error : function(message) {
+      this.flash.html(message);
+      this.flash.show();
+    }
+  };
+
+  // default bootstrap environment
+  var DEFAULT_CANVAS_ENVIRONMENT = 'md';
+
+  // canvas widths for different devices
+  var DEFAULT_CANVAS_WIDTHS = { 'xs' : 320, 'sm' : 320, 'md' : 480, 'lg' : 480 };
+
+  // canvas heights for different devices
+  var DEFAULT_CANVAS_HEIGHTS = { 'xs' : 240, 'sm' : 240, 'md' : 360, 'lg' : 360 };
+
+  var canvas = {
+    widget  : null,
+    element : null,
+    context : null,
+    width   : DEFAULT_CANVAS_WIDTHS[DEFAULT_CANVAS_ENVIRONMENT],
+    height  : DEFAULT_CANVAS_HEIGHTS[DEFAULT_CANVAS_ENVIRONMENT],
+
+    init : function(w, h) {
+      if(w == null || h == null) {
+        var environments = ['xs', 'sm', 'md', 'lg'];
+        var environment = null;
+
+        var element = $('<div>');
+        element.appendTo($('body'));
+
+        for(var i = environments.length - 1; i >= 0 && environment == null; i--) {
+          element.addClass('hidden-'+environments[i]);
+          if(element.is(':hidden')) {
+            element.remove();
+            environment = environments[i];
+          }
+        }
+
+        if(environment == null) {
+          environment = DEFAULT_CANVAS_ENVIRONMENT;
+        }
+
+        this.width = DEFAULT_CANVAS_WIDTHS[environment];
+        this.height = DEFAULT_CANVAS_HEIGHTS[environment];
+      } else {
+        this.width = w;
+        this.height = h;
+      }
+    },
+
+    clear : function() {
+      this.context.clearRect(0, 0, this.width, this.height);
+    }
+  };
+
+  // html between <div class="life"></div> if any
+  var description = '';
+
+  // pattern array
+  var loaded_pattern = null;
+
+  // world
+  var DEFAULT_WORLD_WIDTH = 50;
+  var DEFAULT_WORLD_HEIGHT = 50;
+  var world = {
+    cells  : [],
+    width  : DEFAULT_WORLD_WIDTH,
+    height : DEFAULT_WORLD_HEIGHT,
+    active : 0,
+
+    init   : function() {
+      for(var w = 0; w < 2; w++) {
+        this.cells[w] = new Array(this.width);
+        for(var x = 0; x < this.width; x++) {
+          this.cells[w][x] = new Array(this.height);
+          for(var y = 0; y < this.height; y++) {
+             this.cells[w][x][y] = 0;
+          }
+        }
+      }
+    },
+
+    get : function(x, y) {
+      return this.cells[this.active][x][y];
+    },
+
+    put : function(x, y, value) {
+      if(x >= 0 && x < this.width && y >= 0 && y < this.height) {
+        this.cells[this.active][x][y] = value;
+      }
+    },
+
+    clear : function() {
+      for(var x = 0; x < this.width; x++) {
+        for(var y = 0; y < this.height; y++) {
+          this.cells[this.active][x][y] = 0;
+        }
+      }
+    },
+
+    randomize : function() {
+      for(var x = 0; x < this.width; x++) {
+        for(var y = 0; y < this.height; y++) {
+          this.cells[this.active][x][y]=Math.floor(Math.random()*3)%2;
+        }
+      }
+    },
+
+    // game of life algorithm
+    advance : function() {
+      for(var x = 0; x < this.width; x++) {
+        for(var y = 0; y < this.height; y++) {
+          var sum = 0;
+          for(var col = -1; col <= 1; col++) {
+            for(var row = -1; row <=1; row++) {
+              var xcoord = x+col;
+              var ycoord = y+row;
+              var wrapped = false;
+
+              if(ycoord < 0) {
+                ycoord = this.height-1;
+                wrapped = true;
+              }
+
+              if(ycoord >= this.height) {
+                ycoord = 0;
+                wrapped = true;
+              }
+
+              if(xcoord < 0) {
+                xcoord = this.width-1;
+                wrapped = true;
+              }
+
+              if(xcoord >= this.width) {
+                xcoord = 0;
+                wrapped = true;
+              }
+
+              if(!wrapped) {
+                sum += this.cells[this.active][xcoord][ycoord];
+              }
+            }
+          }
+
+          if(sum == 3) {
+            this.cells[1-this.active][x][y] = 1;
+          } else if(sum == 4) {
+            this.cells[1-this.active][x][y] = this.cells[this.active][x][y];
+          } else {
+            this.cells[1-this.active][x][y] = 0;
+          }
+        }
+      }
+
+      this.active = 1-this.active;
+    },
+
+    load : function(p) {
+      for(var x = 0; x < this.width; x++) {
+        for(y = 0; y < this.height; y++) {
+          this.put(x, y, p.get(x, y));
+        }
+      }
+    },
+  };
+
+  var pattern = {
+
+    cells : [],
+    width : 1,
+    height : 1,
+
+    filename : '',
+    filesize : '',
+    dimensions : '',
+    author : '',
+    name : '',
+    description : '',
+
+    init : function(w, h) {
+      this.width = w;
+      this.height = h;
+      this.cells = new Array(this.width);
+      for(var x = 0; x < this.width; x++) {
+        this.cells[x] = new Array(this.height);
+        for(var y = 0; y < this.height; y++) {
+           this.cells[x][y] = 0;
+        }
+      }
+    },
+
+    get : function(x, y) {
+      return this.cells[x][y];
+    },
+
+    put : function(x, y, value) {
+      if(x >= 0 && x < this.width && y >= 0 && y < this.height) {
+        this.cells[x][y] = value;
+      }
+    },
+
+    // load pattern from url
+    load : function(url, okcb, notokcb) {
+      $.ajax({
+        url: url,
+
+        type: "GET",
+
+        context: this,
+
+        success: function(response, status, request) {
+          var data = response.split("\n");
+          var translate = {
+            x : Math.round(this.width/2),
+            y : Math.round(this.height/2)
+          };
+          var P = {
+            x : 0,
+            y : 0
+          };
+          var y = 0;
+
+          var x1 = translate.x;
+          var y1 = translate.y;
+          var x2 = translate.x;
+          var y2 = translate.y;
+
+          if(data[0].indexOf('#Life 1.05') == 0) {
+            for(var i = 0; i < data.length; i++) {
+              if(data[i] != "") {
+                 if(data[i].indexOf('#P') == 0) {
+                   var offsets = data[i].substring(3).split(" ");
+                   P.x = parseInt(offsets[0]);
+                   P.y = parseInt(offsets[1]);
+                   y = 0;
+                 } else if(data[i].indexOf('#D Author:') == 0) {
+                   this.author = data[i].substring(11);
+                 } else if(data[i].indexOf('#D Name:') == 0) {
+                   this.name = data[i].substring(8);
+                 } else if(data[i].indexOf('#D') == 0) {
+                   this.description += data[i].substring(3);
+                 } else if(data[i].charAt(0) != "#") {
+                   for(var x = 0; x < data[i].length; x++) {
+                     var cellx = translate.x+P.x+x;
+                     var celly = translate.y+P.y+y;
+
+                     if(cellx < x1) { x1 = cellx };
+                     if(cellx > x2) { x2 = cellx };
+                     if(celly < y1) { y1 = celly };
+                     if(celly > y2) { y2 = celly };
+
+                     if(data[i].charAt(x) == '*') {
+                       this.cells[cellx][celly] = 1;
+                     }
+                   }
+                   y++;
+                 }
+              }
+            }
+            this.width = x2-x1+1;
+            this.height = y2-y1+1;
+
+            this.dimensions = this.width + 'x' + this.height;
+            this.filename = url.split('/').reverse()[0];
+            if(request.getResponseHeader('Content-Length')) {
+              this.filesize = request.getResponseHeader('Content-Length') + ' bytes';
+            } else {
+              this.filesize = '';
+            }
+            this.description = this.description.replace(/\r/,'').replace(/[http:\/\/]*(www\.[A-Z|a-z|-|0-9]+\.[A-Z|a-z|0-9|\(|\)_|\-|\/|\?|\.|\=]+)/,' <a target="_blank" href="http://\$1">\$1</a>');
+
+            okcb(this);
+          } else {
+            notokcb('File is not Life 1.05 format');
+          }
+        },
+
+        error: function(xhr, status, e) {
+          notokcb('Failed to load \"' + url + '\": ' + e + '.');
+        }
+      });
+    }
+  };
+
+  // timer interval
+  var interval = null;
+
+  // camera 
+  var camera = {
+    x: 200,
+    y: 160,
+    shiftx: 48,
+    shifty: 0,
+    width: 1,
+    height: 1,
+    scale: 30,
+
+    init : function(w, h) {
+      this.width = w;
+      this.height = h;
+    },
+
+    pan : function(px, py) {
+      this.y -= parseInt((this.shifty+py)/this.scale);
+      this.shifty = ((this.shifty+py)%this.scale);
+      this.x -= parseInt((this.shiftx+px)/this.scale);
+      this.shiftx = ((this.shiftx+px)%this.scale);
+    },
+
+    zoom : function(px, py, zoom) {
+      var cellx = this.x+Math.round((px-this.shiftx)/this.scale);
+      var celly = this.y+Math.round((py-this.shifty)/this.scale);
+
+      var pointshiftx = this.shiftx+(px%this.scale);
+      var pointshifty = this.shifty+(py%this.scale);
+
+      this.scale += zoom;
+      this.width = Math.floor(world.width/this.scale);
+      this.height = Math.floor(world.height/this.scale);
+
+      //   if(zoom > 0 ) {
+      //      this.shiftx = (this.shiftx*zoom)%this.scale;
+      //      this.shifty = (this.shifty*zoom)%this.scale;
+      //    } else {
+      //      this.shiftx = Math.round(pointshiftx/Math.abs(zoom));
+      //      this.shifty = Math.round(pointshifty/Math.abs(zoom));
+      //    }
+
+      //    this.x = cellx-Math.round((px)/this.scale);
+      //    this.y = celly-Math.round((py)/this.scale);
+    }
+
+  };
+
+  // fetches value for a url parameter
+  // https://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript/901144#901144
+  function parameter_value(name) {
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+      results = regex.exec(location.search);
+    return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+  }
+
+  // create and initialize an array with zeroes
+  var init_array = function(array_width, array_height) {
+    var array = new Array(array_width);
+    for(var col = 0; col < array_width; col++) {
+      array[col] = new Array(array_height);
+      for(var row = 0; row < array_height; row++) {
+         array[col][row] = 0;
+      }
+    }
+    return array;
+  };
+
+  // clear canvas and draw active cells
+  var redraw = function() {
+    canvas.clear();
+    canvas.context.beginPath();
+    for(var x = 0; x < camera.width; x++) {
+      for(var y = 0; y < camera.height; y++) {
+        if(world.get(camera.x+x,camera.y+y) == 1) {
+          canvas.context.rect((x*camera.scale)+camera.shiftx+0.5, (y*camera.scale)+camera.shifty+0.5, camera.scale, camera.scale);
+          canvas.context.fill();
+          canvas.context.stroke();
+        }
+      }
+    }
+    //canvas.context.closePath();
+    //canvas.context.translate(-camera.shiftx, -camera.shifty);
+  };
+
+  // start animation
+  var start = function() {
+    if(interval != null) {
+      clearInterval(interval);
+    }
+    interval = setInterval(animate, 200*(6-ui.speed));
+    ui.spinner.show();
+  };
+
+  // stop animation
+  var stop = function() {
+    if(interval != null) {
+      clearInterval(interval);
+    }
+    interval = null;
+    redraw();
+    ui.spinner.hide();
+  };
+
+  var keypress = function(e) {
+    // left
+    if(e.keyCode == 37) {
+      camera.pan(-4,0);
+      e.preventDefault();
+      redraw();
+    // right
+    } else if(e.keyCode == 39) {
+      camera.pan(4,0);
+      e.preventDefault();
+      redraw();
+    // up
+    } else if(e.keyCode == 38) {
+      camera.pan(0,-4);
+      e.preventDefault();
+      redraw();
+    // down
+    } else if(e.keyCode == 40) {
+      camera.pan(0,4);
+      e.preventDefault();
+      redraw();
+    }
+  };
+
+  // zoom in
+  var zoomin = function() {
+    camera.zoom(Math.round(canvas.width/2),Math.floor(canvas.height/2),2);
+    redraw();
+  };
+
+  // zoom out
+  var zoomout = function() {
+    camera.zoom(Math.round(canvas.width/2),Math.floor(canvas.height/2),-2);
+    redraw();
+  };
+
+  // clear all cells
+  var clear = function() {
+    world.clear();
+    ui.stats('','','','','','');
+    redraw();
+  };
+
+  // animate - draw cells, advance, repeat
+  var animate = function() {
+    world.advance();
+    redraw();
+  };
+
+  // redraw loaded pattern or clear cells
+  var reset = function() {
+    if(loaded_pattern != null) {
+      apply_pattern(loaded_pattern);
+    } else {
+      world.clear();
+    }
+    redraw();
+  };
+
+  // draw some random (kind of) cells
+  var randomize = function() {
+    world.randomize();
+    redraw();
+  };
+
+  var canvas_click = function() {
+    //widget.focus();
+    //canvas.focus();
+  };
+
+  // map pattern to world, scaling to fit viewport
+  var apply_pattern = function(pattern) {
+    var shift_x = Math.floor((world.width-pattern.width)/2);
+    var shift_y = Math.floor((world.height-pattern.height)/2);
+
+    for(var x = 0; x < pattern.width; x++) {
+      for(var y = 0; y < pattern.height; y++) {
+        world.put(x+shift_x,y+shift_y,pattern.cells[x][y]);
+      }
+    }
+
+    camera.scale = Math.floor(Math.min(world.height/pattern.height,world.width/pattern.width));
+    camera.width = Math.floor(world.width/camera.scale);
+    camera.height = Math.floor(world.height/camera.scale);
+
+    camera.x = shift_x-Math.floor((camera.width-pattern.width)/2)
+    camera.y = shift_y-Math.floor((camera.height-pattern.height)/2);
+
+    camera.shiftx = Math.floor(((world.width)%camera.scale)/2);
+    camera.shifty = Math.floor(((world.height)%camera.scale)/2);
+
+    ui.stats(pattern.filename, pattern.filesize, pattern.dimensions, pattern.author, pattern.name, pattern.description);
+
+    redraw();
+  };
+
+  var adjust_camera = function() {
+    camera.scale = Math.floor(Math.min(world.height/pattern.height,world.width/pattern.width));
+    camera.width = Math.floor(world.width/camera.scale);
+    camera.height = Math.floor(world.height/camera.scale);
+
+    camera.x = Math.ceil((world.width-pattern.width)/2)-Math.floor((camera.width-pattern.width)/2);
+    camera.y = Math.ceil((world.height-pattern.height)/2)-Math.floor((camera.height-pattern.height)/2);
+
+    camera.shiftx = Math.floor(((world.width)%camera.scale)/2);
+    camera.shifty = Math.floor(((world.height)%camera.scale)/2);
+
+    ui.stats(pattern.filename, pattern.filesize, pattern.dimensions, pattern.author, pattern.name, pattern.description);
+  };
+
+  // load patterns in Life 1.06 format
+  var load_pattern106 = function(data, filename, content_length) {
+    var pattern = { cells: [] };
+
+    // determine width & height
+    var minx = Number.MAX_VALUE;
+    var maxx = Number.MIN_VALUE;
+    var miny = Number.MAX_VALUE;
+    var maxy = Number.MIN_VALUE;
+    for(var i = 0; i < data.length; i++) {
+      if(data[i][0] != "#" && data[i] != "") {
+        var coords = data[i].split(" ");
+        var xcoord = parseInt(coords[0]);
+        var ycoord = parseInt(coords[1]);
+
+        if(xcoord > maxx) { maxx = xcoord; }
+        if(xcoord < minx) { minx = xcoord; }
+        if(ycoord > maxy) { maxy = ycoord; }
+        if(ycoord < miny) { miny = ycoord; }
+      }
+    }
+
+    pattern.width = (Math.abs(minx)+Math.abs(maxx)+1);
+    pattern.height = (Math.abs(miny)+Math.abs(maxy)+1);
+
+    if(pattern.width > canvas.width || pattern.height > canvas.height) {
+      ui.error('Pattern \"' + filename + '\" is too large or an invalid format.');
+      loaded_pattern = null;
+    } else {
+      pattern.cells = init_array(pattern.width, pattern.height);
+
+      // populate and shift origin to 0,0
+      for(var i = 0; i < data.length; i++) {
+        if(data[i][0] != "#" && data[i] != "") {
+          var coords = data[i].split(" ");
+          var xcoord = parseInt(coords[0])+Math.abs(minx);
+          var ycoord = parseInt(coords[1])+Math.abs(miny);
+
+          if(data[i][0] != "#" && data[i] != "") {
+            pattern.cells[xcoord][ycoord]=1;
+          }
+        }
+      }
+
+      pattern.filename = filename.split('/').reverse()[0];
+      pattern.filesize = content_length + ' bytes';
+      pattern.dimensions = pattern.width + 'x' + pattern.height;
+      pattern.author = '';
+      pattern.name = '';
+      pattern.description = '';
+
+      loaded_pattern = pattern;
+
+      apply_pattern(pattern);
+    }
+  };
+
+  // load patterns in Life 1.05 format
+  var load_pattern105 = function(data, filename, content_length) {
+    var pattern = { cells: [] };
+
+    var name = "";
+    var descr = "";
+    var author = "";
+
+    var minx = Number.MAX_VALUE;
+    var maxx = Number.MIN_VALUE;
+    var miny = Number.MAX_VALUE;
+    var maxy = Number.MIN_VALUE;
+
+    var offsetX = 0;
+    var offsetY = 0;
+
+    var row = 0;
+    for(var i = 0; i < data.length; i++) {
+      if(data[i] != "") {
+        if(data[i].indexOf('#P') == 0) {
+          var offsets = data[i].substring(3).split(" ");
+          offsetX = parseInt(offsets[0]);
+          offsetY = parseInt(offsets[1]);
+          if(offsetX < minx) { minx = offsetX; }
+          if(offsetY < miny) { miny = offsetY; }
+          row = 0;
+        } else if(data[i].indexOf('#D Author:') == 0) {
+          author = data[i].substring(11);
+        } else if(data[i].indexOf('#D Name:') == 0) {
+          name = data[i].substring(8);
+        } else if(data[i].indexOf('#D') == 0) {
+          descr += data[i].substring(3);
+        } else if(data[i].charAt(0) != "#") {
+          var xcoord = offsetX + data[i].length;
+          var ycoord = offsetY + row;
+
+          if(xcoord > maxx) { maxx = xcoord; }
+          if(ycoord > maxy) { maxy = ycoord; }
+          row++;
+        }
+      }
+    }
+
+    // turn any 'www....' into links
+    descr = descr.replace(/\r/,'');
+    descr = descr.replace(/[http:\/\/]*(www\.[A-Z|a-z|-|0-9]+\.[A-Z|a-z|0-9|\(|\)_|\-|\/|\?|\.|\=]+)/,' <a target="_blank" href="http://\$1">\$1</a>');
+
+    pattern.width = (Math.abs(minx)+Math.abs(maxx)+1);
+    pattern.height = (Math.abs(miny)+Math.abs(maxy)+1);
+
+    if(pattern.width > canvas.width || pattern.height > canvas.height) {
+      ui.error('Pattern \"' + filename + '\" is too large or an invalid format.');
+      loaded_pattern = null;
+    } else {
+      pattern.cells = init_array(pattern.width, pattern.height);
+
+      // populate and shift origin to 0,0
+      var y = 0;
+      for(var i = 0; i < data.length; i++) {
+        if(data[i] != "") {
+          if(data[i].indexOf('#P') == 0) {
+            var offsets = data[i].substring(3).split(" ");
+            offsetX = parseInt(offsets[0]);
+            offsetY = parseInt(offsets[1]);
+            y = 0;
+          } else if(data[i].charAt(0) != "#") {
+            for(var x = 0; x < data[i].length; x++) {
+              if(data[i].charAt(x) == '*') {
+                pattern.cells[offsetX+x+Math.abs(minx)][offsetY+y+Math.abs(miny)]=1;
+              }
+            }
+            y++;
+          }
+        }
+      }
+
+      pattern.filename = filename.split('/').reverse()[0];
+      if(content_length) {
+        pattern.filesize = content_length + ' bytes';
+      } else {
+        pattern.filesize = '';
+      }
+      pattern.dimensions = pattern.width + 'x' + pattern.height;
+      pattern.author = author;
+      pattern.name = name;
+      pattern.description = descr;
+
+      loaded_pattern = pattern;
+
+      apply_pattern(pattern);
+    }
+  };
+
+  // load patterns in Life 1.06 format
+  var load_pattern106 = function(data, filename, content_length) {
+    var pattern = { cells: [] };
+
+    // determine width & height
+    var minx = Number.MAX_VALUE;
+    var maxx = Number.MIN_VALUE;
+    var miny = Number.MAX_VALUE;
+    var maxy = Number.MIN_VALUE;
+    for(var i = 0; i < data.length; i++) {
+      if(data[i][0] != "#" && data[i] != "") {
+        var coords = data[i].split(" ");
+        var xcoord = parseInt(coords[0]);
+        var ycoord = parseInt(coords[1]);
+
+        if(xcoord > maxx) { maxx = xcoord; }
+        if(xcoord < minx) { minx = xcoord; }
+        if(ycoord > maxy) { maxy = ycoord; }
+        if(ycoord < miny) { miny = ycoord; }
+      }
+    }
+
+    pattern.width = (Math.abs(minx)+Math.abs(maxx)+1);
+    pattern.height = (Math.abs(miny)+Math.abs(maxy)+1);
+
+    if(pattern.width > canvas.width || pattern.height > canvas.height) {
+      ui.error('Pattern \"' + filename + '\" is too large or an invalid format.');
+      loaded_pattern = null;
+    } else {
+      pattern.cells = init_array(pattern.width, pattern.height);
+
+      // populate and shift origin to 0,0
+      for(var i = 0; i < data.length; i++) {
+        if(data[i][0] != "#" && data[i] != "") {
+          var coords = data[i].split(" ");
+          var xcoord = parseInt(coords[0])+Math.abs(minx);
+          var ycoord = parseInt(coords[1])+Math.abs(miny);
+
+          if(data[i][0] != "#" && data[i] != "") {
+            pattern.cells[xcoord][ycoord]=1;
+          }
+        }
+      }
+
+      pattern.filename = filename.split('/').reverse()[0];
+      if(content_length) {
+        pattern.filesize = content_length + ' bytes';
+      } else {
+        pattern.filesize = '';
+      }
+      pattern.dimensions = pattern.width + 'x' + pattern.height;
+      pattern.author = '';
+      pattern.name = '';
+      pattern.description = '';
+
+      loaded_pattern = pattern;
+
+      apply_pattern(pattern);
+    }
+  };
+
+  // load pattern from url
+  var load_pattern = function(url) {
+    pattern.init(world.width, world.height);
+    pattern.load(url, function(p) {
+      console.log(p);
+      world.load(p);
+      adjust_camera();
+      redraw();
+    }, function(m) {
+      ui.error(m);
+    });
+/*
+    $.ajax({
+      url: url,
+
+      type: "GET",
+
+      success: function(response, status, request) {
+        var data = response.split("\n");
+        if(data[0].indexOf('#Life 1.05') == 0) {
+          load_pattern105(data, url, request.getResponseHeader('Content-Length'));
+        } else {
+          load_pattern106(data, url, request.getResponseHeader('Content-Length'));
+        }
+      },
+
+      error: function(xhr, status, e) {
+        ui.error('Failed to load \"' + url + '\": ' + e + '.');
+      }
+    });
+*/
+  };
+
+  // slider slided - change speed and restart animation
+  var slide = function(arg) {
+    ui.speed = arg.value;
+    if(interval != null) {
+      stop();
+      start();
+    }
+  };
+
+  // clear and store the description
+  description = $(element).html();
+  $(element).html('');
+
+  // build canvas
+  canvas.init($(element).attr('data-width'), $(element).attr('data-height'));
+
+  // build ui
+  ui.init(
+    canvas.width, 
+    $(element).attr('data-speed'),
+    {
+      start:     $(element).attr('data-start-show')     != 'false',
+      stop:      $(element).attr('data-stop-show')      != 'false',
+      randomize: $(element).attr('data-randomize-show') != 'false',
+      reset:     $(element).attr('data-clear-show')     != 'false',
+      clear:     $(element).attr('data-clear-show')     != 'false',
+    }
+  );
+
+  div_row = $('<div class="row" style="padding-bottom:5px"></div>');
+  div_row.append(
+    $('<div class="col-md-6"></div>').append(
+      $('<span>').append(
+        'Speed&nbsp;&nbsp;'
+      ).append(
+        ui.slider
+      )
+    )
+  ).css('display', $(element).attr('data-speed-show') == "false" ? 'none' : '');
+  $(element).append(div_row);
+  ui.slider.slider().on('slideStop', slide); // needs to appended
+
+  // button components
+  ui.onstart(start);
+  ui.onstop(stop);
+  ui.onrandomize(randomize);
+  ui.onreset(reset);
+  ui.onclear(clear);
+
+  var div_row = $('<div class="row" style="padding-bottom: 5px"></div>');
+  div_row.append(
+    $('<div class="col-md-12"></div>').append(
+      ui.button_start
+    ).append(
+      '\n'
+    ).append(
+      ui.button_reset
+    ).append(
+      '\n'
+    ).append(
+      ui.button_randomize
+    ).append(
+      '\n'
+    ).append(
+      ui.button_clear
+    ).append(
+      '\n'
+    ).append(
+      ui.button_stop
+    )
+  );
+  $(element).append(div_row);
+
+  // flash component
+  div_row = $('<div class="row"></div>');
+  div_row.append(
+    $('<div class="col-md-12"></div>').append(
+      ui.flash
+    )
+  );
+  $(element).append(div_row);
+
+  // canvas component
+  canvas.element = $('<canvas tabindex="1" style="background-color: grey" width="' + canvas.width + '" height="' + canvas.height + '"></canvas>');
+  canvas.widget = canvas.element[0];
+  if($(element).attr('data-editable') != 'false') {
+    canvas.widget.click(canvas_click);
+  }
+  canvas.element.keypress(keypress);
+
+  ui.onzoomin(zoomin);
+  ui.onzoomout(zoomout);
+
+  div_row = $('<div class="row"></div>');
+  div_row.append(
+    $('<div class="col-md-6"></div>'
+    ).append(
+      canvas.widget
+    ).append(
+      ' '
+    ).append(
+      $('<div class="btn-group-vertical btn-group-sm">').append(
+        ui.button_zoomin
+      ).append(
+        ui.button_zoomout
+      )
+    ).append( 
+      ' '
+    ).append(
+      ui.spinner
+    )
+  );
+  canvas.context = canvas.widget.getContext('2d');
+  canvas.context.shadowBlur = 0;
+  canvas.context.fillStyle='red';
+
+  // stats components
+  if($(element).attr('data-stats-show') != 'false') {
+    div_row.append(
+      $('<div class="col-md-6"/>').append(
+        $('<table class="table"/>').append(
+          $('<tr/>').append(
+            $('<td/>').append('Filename:')
+          ).append(
+            $('<td/>').append(ui.stats_filename)
+          )
+        ).append(
+          $('<tr/>').append(
+            $('<td/>').append('File Size:')
+          ).append(
+            $('<td/>').append(ui.stats_filesize)
+          )
+        ).append(
+          $('<tr/>').append(
+            $('<td/>').append('Dimensions:')
+          ).append(
+            $('<td/>').append(ui.stats_dimensions)
+          )
+        ).append(
+          $('<tr/>').append(
+            $('<td/>').append('Name:')
+          ).append(
+            $('<td/>').append(ui.stats_name)
+          )
+        ).append(
+          $('<tr/>').append(
+            $('<td/>').append('Author:')
+          ).append(
+            $('<td/>').append(ui.stats_author)
+          )
+        ).append(
+          $('<tr/>').append(
+            $('<td colspan="2"/>').append(ui.stats_description)
+          )
+        ).append(
+          $('<tr/>').append(
+            $('<td colspan="2"/>').append(description)
+          )
+        )
+      )
+    );
+  } else {
+    div_row.append(
+      $('<div class="col-md-6"/>').append(
+        $('<table class="table"/>').append(
+          $('<tr/>').append(
+            $('<td/>').append(description)
+          )
+        )
+      )
+    );
+  }
+  
+  $(element).append(div_row);
+
+  // initialise world
+  world.width = canvas.width;
+  world.height = canvas.height;
+  world.init();
+
+  // load pattern or default world
+  if($(element).attr('data-url')) {
+    load_pattern($(element).attr('data-url'))
+  } else if($(element).attr('data-param')) {
+    load_pattern(parameter_value($(element).attr('data-param')));
+  }
+};
+
+$(document).ready(function() {
+  var games = $('.life');
+  for(var i = 0; i < games.length; i++) {
+    new Life(games[i]);
+  }
+});
+

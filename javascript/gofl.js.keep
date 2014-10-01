@@ -6,7 +6,7 @@
 //      data-editable="false"></div>
 function GOFL(element) {
   // main components
-  var viewport = null;
+  var widget = null;
   var canvas = null;
   var flash = null;
   var button_stop = null;
@@ -42,16 +42,9 @@ function GOFL(element) {
   var wrap = true;
 
   // 3-d array to hold cells
-  var world = null;
+  var world = [];
   var world_width = 50;
   var world_height = 50;
-  var world_scaling = 6;
-
-  // padding around pattern - some need space to grow
-  var padding_left = 3;
-  var padding_right = 3;
-  var padding_top = 3;
-  var padding_bottom = 3;
 
   // pointers to two world arrays - old world, new world
   var active_world = 0;
@@ -62,6 +55,17 @@ function GOFL(element) {
 
   // timer interval
   var interval = null;
+
+  // viewport 
+  var viewport = {
+    x: 200,
+    y: 160,
+    shiftx: 48,
+    shifty: 0,
+    width: Math.floor(canvas_width/30),
+    height: Math.floor(canvas_height/30),
+    zoom: 30
+  };
 
   // default bootstrap environment
   var be = 'md';
@@ -125,16 +129,22 @@ function GOFL(element) {
   // clear canvas and draw active cells
   var draw_world = function() {
     context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-    for(var x = 0; x < world_width; x++) {
-      for(var y = 0; y < world_height; y++) {
-        if(world[active_world][x][y] == 1) {
-          context.beginPath();
-          context.rect(x*world_scaling+0.5, y*world_scaling+0.5, world_scaling, world_scaling);
-          context.fill();
-          context.stroke();
+    context.translate(viewport.shiftx, viewport.shifty);
+    context.scale(2,2);
+    for(var x = -1; x < (viewport.width+1); x++) {
+      for(var y = -1; y < (viewport.height+1); y++) {
+        if((x+viewport.x)>=0 && (x+viewport.x)<canvas_width && (y+viewport.y)<canvas_height && (y+viewport.y)>=0) {
+          if(world[active_world][x+viewport.x][y+viewport.y] == 1) {
+            context.beginPath();
+            //context.rect((x*viewport.zoom)+viewport.shiftx, (y*viewport.zoom)+viewport.shifty, viewport.zoom, viewport.zoom);
+            context.rect(x*viewport.zoom, y*viewport.zoom, viewport.zoom, viewport.zoom);
+            context.fill();
+            context.stroke();
+          }
         }
       }
     }
+    context.translate(-viewport.shiftx, -viewport.shifty);
   };
 
   // start animation
@@ -153,6 +163,44 @@ function GOFL(element) {
     }
     interval = null;
     spinner.hide();
+  };
+
+  // zoom in
+  var zoomin = function() {
+    zoom(Math.round(canvas_width/2),Math.floor(canvas_height/2),2);
+    draw_world();
+  };
+
+  // zoom out
+  var zoomout = function() {
+    zoom(Math.round(canvas_width/2),Math.floor(canvas_height/2),-2);
+    draw_world();
+  };
+
+  // zoom
+  // x = viewport.width/2
+  // y = viewport.height/2
+  var zoom = function(pointx, pointy, factor) {
+    var cellx = viewport.x+Math.round((pointx-viewport.shiftx)/viewport.zoom);
+    var celly = viewport.y+Math.round((pointy-viewport.shifty)/viewport.zoom);
+
+    var pointshiftx = viewport.shiftx+(pointx%viewport.zoom);
+    var pointshifty = viewport.shifty+(pointy%viewport.zoom);
+
+    viewport.zoom += factor;
+    viewport.width = Math.floor(world_width/viewport.zoom);
+    viewport.height = Math.floor(world_height/viewport.zoom);
+
+    if(factor > 0 ) {
+      viewport.shiftx = (viewport.shiftx*factor)%viewport.zoom;
+      viewport.shifty = (viewport.shifty*factor)%viewport.zoom;
+    } else {
+      viewport.shiftx = Math.round(pointshiftx/Math.abs(factor));
+      viewport.shifty = Math.round(pointshifty/Math.abs(factor));
+    }
+
+    viewport.x = cellx-Math.round((pointx)/viewport.zoom);
+    viewport.y = celly-Math.round((pointy)/viewport.zoom);
   };
 
   // clear all cells
@@ -193,14 +241,6 @@ function GOFL(element) {
       }
     }
     draw_world();
-  };
-
-  // draw a cell on the canvas
-  var canvas_click = function(e) {
-    var world_x = Math.floor((e.pageX-viewport.offset().left)/world_scaling);
-    var world_y = Math.floor((e.pageY-viewport.offset().top)/world_scaling);
-    world[active_world][world_x][world_y] = 1-world[active_world][world_x][world_y];
-    draw_world(); 
   };
 
   // game of life algorithm
@@ -256,26 +296,24 @@ function GOFL(element) {
 
   // map pattern to world, scaling to fit viewport
   var apply_pattern = function(pattern) {
-    var pattern_width_scaling = canvas_width/(pattern.width+padding_left+padding_right);
-    var pattern_height_scaling = canvas_height/(pattern.height+padding_top+padding_bottom);
-    var pattern_scaling = (pattern_width_scaling < pattern_height_scaling) ? pattern_width_scaling : pattern_height_scaling;
-
-    world_scaling = Math.floor(pattern_scaling);
-    world_width = Math.floor(canvas_width/world_scaling);
-    world_height = Math.floor(canvas_height/world_scaling);
-
-    world = init_array(world_width);
-    world[active_world] = init_array(world_width, world_height);
-    world[inactive_world] = init_array(world_width, world_height);
-
-    var shift_x = Math.floor((world_width-(pattern.width+padding_left+padding_right))/2)+padding_left;
-    var shift_y = Math.floor((world_height-(pattern.height+padding_top+padding_bottom))/2)+padding_top;
+    var shift_x = Math.floor((world_width-pattern.width)/2);
+    var shift_y = Math.floor((world_height-pattern.height)/2);
 
     for(var x = 0; x < pattern.width; x++) {
       for(var y = 0; y < pattern.height; y++) {
         world[active_world][x+shift_x][y+shift_y]=pattern.cells[x][y];
       }
     }
+
+    viewport.zoom = Math.floor(Math.min(world_height/pattern.height,world_width/pattern.width));
+    viewport.width = Math.floor(world_width/viewport.zoom);
+    viewport.height = Math.floor(world_height/viewport.zoom);
+
+    viewport.x = shift_x-Math.floor((viewport.width-pattern.width)/2)
+    viewport.y = shift_y-Math.floor((viewport.height-pattern.height)/2);
+
+    viewport.shiftx = Math.floor(((world_width)%viewport.zoom)/2);
+    viewport.shifty = Math.floor(((world_height)%viewport.zoom)/2);
 
     stats_filename.html(pattern.filename);
     stats_filesize.html(pattern.filesize);
@@ -312,7 +350,7 @@ function GOFL(element) {
     pattern.width = (Math.abs(minx)+Math.abs(maxx)+1);
     pattern.height = (Math.abs(miny)+Math.abs(maxy)+1);
 
-    if((pattern.width+padding_right+padding_left) > canvas_width || (pattern.height+padding_top+padding_bottom) > canvas_height) {
+    if(pattern.width > canvas_width || pattern.height > canvas_height) {
       flash.html('Pattern \"' + filename + '\" is too large or an invalid format.');
       flash.show();
       loaded_pattern = null;
@@ -395,7 +433,7 @@ function GOFL(element) {
     pattern.width = (Math.abs(minx)+Math.abs(maxx)+1);
     pattern.height = (Math.abs(miny)+Math.abs(maxy)+1);
 
-    if((pattern.width+padding_right+padding_left) > canvas_width || (pattern.height+padding_top+padding_bottom) > canvas_height) {
+    if(pattern.width > canvas_width || pattern.height > canvas_height) {
       flash.html('Pattern \"' + filename + '\" is too large or an invalid format.');
       flash.show();
       loaded_pattern = null;
@@ -646,19 +684,37 @@ function GOFL(element) {
   $(element).append(div_row);
 
   // canvas component
-  viewport = $('<canvas style="background-color: grey" width="' + canvas_width + '" height="' + canvas_height + '"></canvas>');
+  widget = $('<canvas style="background-color: grey" width="' + canvas_width + '" height="' + canvas_height + '"></canvas>');
   if($(element).attr('data-editable') != 'false') {
-    viewport.click(canvas_click);
+    widget.click(canvas_click);
   }
-  canvas = viewport[0];
-  //spinner =  $('<img style="vertical-align: top" src="' + $('script[src$="gofl.js"]').attr('src').replace(/gofl.js/,'../images/loading.gif') + '"/>');
+  canvas = widget[0];
+
+  var button_zoomin = $('<button type="button" class="btn btn-default"><span class="glyphicon glyphicon-plus"></span></button>');
+  button_zoomin.click(zoomin);
+  var button_zoomout = $('<button type="button" class="btn btn-default"><span class="glyphicon glyphicon-minus"></span></button>');
+  button_zoomout.click(zoomout);
+
   spinner =  $('<img style="vertical-align: top" src="images/loading.gif"/>');
   spinner.hide();
   div_row = $('<div class="row"></div>');
   div_row.append(
-    $('<div class="col-md-6"></div>').append(canvas)
-      .append(' ')
-      .append(spinner)
+    $('<div class="col-md-6"></div>'
+    ).append(
+      canvas
+    ).append(
+      ' '
+    ).append(
+      $('<div class="btn-group-vertical btn-group-sm">').append(
+        button_zoomin
+      ).append(
+        button_zoomout
+      )
+    ).append( 
+      ' '
+    ).append(
+      spinner
+    )
   );
   context = canvas.getContext('2d');
   context.shadowBlur = 0;
@@ -729,33 +785,19 @@ function GOFL(element) {
   
   $(element).append(div_row);
 
-  // set padding
-  if($(element).attr('data-padding-left')) {
-    padding_left = parseInt($(element).attr('data-padding-left'));
-  }
-  if($(element).attr('data-padding-right')) {
-    padding_right = parseInt($(element).attr('data-padding-right'));
-  }
-  if($(element).attr('data-padding-top')) {
-    padding_top = parseInt($(element).attr('data-padding-top'));
-  }
-  if($(element).attr('data-padding-bottom')) {
-    padding_bottom = parseInt($(element).attr('data-padding-bottom'));
-  }
+  // initialise world
+  world_width = canvas_width;
+  world_height = canvas_height;
+
+  world = []
+  world[active_world] = init_array(world_width, world_height);
+  world[inactive_world] = init_array(world_width, world_height);
 
   // load pattern or default world
   if($(element).attr('data-url')) {
     load_pattern($(element).attr('data-url'))
   } else if($(element).attr('data-param')) {
     load_pattern(parameter_value($(element).attr('data-param')));
-  } else {
-    world_scaling = 12;
-    world_width = Math.floor(canvas_width/world_scaling);
-    world_height = Math.floor(canvas_height/world_scaling);
-
-    world = []
-    world[active_world] = init_array(world_width, world_height);
-    world[inactive_world] = init_array(world_width, world_height);
   }
 };
 
