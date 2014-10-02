@@ -42,9 +42,12 @@ function Life(element) {
       height  : DEFAULT_CANVAS_HEIGHTS[DEFAULT_CANVAS_ENVIRONMENT],
 
       dragging : false,
+      dragged : false,
       lastX : -1,
       lastY : -1,
       _ondrag : null,
+
+      _onclick : null,
 
       init : function(w, h) {
         if(w == null || h == null) {
@@ -77,6 +80,7 @@ function Life(element) {
        this.element.mousedown($.proxy(this.mouse,this));
        this.element.mousemove($.proxy(this.mouse, this));
        $(window).mouseup($.proxy(this.mouse,this));
+       this.element.click($.proxy(this.click, this));
 
        this.widget = ui.canvas.element[0];
 
@@ -94,7 +98,7 @@ function Life(element) {
       },
 
       onclick : function(f) {
-        this.element.click(f);
+        this._onclick = f;
       },
 
       onkeypress : function(f) {
@@ -109,9 +113,16 @@ function Life(element) {
         this.context.clearRect(0, 0, this.width, this.height);
       },
 
+      click : function(e) {
+        if(!this.dragged && this._onclick) {
+          this._onclick(e);
+        }
+      },
+
       mouse : function(e) {
         if(e.originalEvent.type == "mousedown") {
           this.dragging = true;
+          this.dragged = false;
           this.lastX = e.screenX;
           this.lastY = e.screenY;
         } else if(e.originalEvent.type == "mouseup") {
@@ -120,6 +131,7 @@ function Life(element) {
           this.lastY = -1;
         } else if(this.dragging) {
           if(this._ondrag) {
+            this.dragged = true;
             this._ondrag(e.screenX-this.lastX, e.screenY-this.lastY);
           }
           this.lastX = e.screenX;
@@ -729,7 +741,9 @@ function Life(element) {
     ui.canvas.onclick(click);
   }
   ui.canvas.onkeypress(keypress);
-  ui.canvas.ondrag(drag);
+  if($(element).attr('data-draggable') != 'false') {
+    ui.canvas.ondrag(drag);
+  }
 
   ui.onzoomin(zoomin);
   ui.onzoomout(zoomout);
