@@ -41,6 +41,11 @@ function Life(element) {
       width   : DEFAULT_CANVAS_WIDTHS[DEFAULT_CANVAS_ENVIRONMENT],
       height  : DEFAULT_CANVAS_HEIGHTS[DEFAULT_CANVAS_ENVIRONMENT],
 
+      dragging : false,
+      lastX : -1,
+      lastY : -1,
+      _ondrag : null,
+
       init : function(w, h) {
         if(w == null || h == null) {
           var environments = ['xs', 'sm', 'md', 'lg'];
@@ -69,6 +74,10 @@ function Life(element) {
         }
 
        this.element = $('<canvas tabindex="1" style="background-color: grey" width="' + this.width + '" height="' + this.height + '"></canvas>');
+       this.element.mousedown($.proxy(this.mouse,this));
+       this.element.mousemove($.proxy(this.mouse, this));
+       $(window).mouseup($.proxy(this.mouse,this));
+
        this.widget = ui.canvas.element[0];
 
        this.context = this.widget.getContext('2d');
@@ -92,9 +101,32 @@ function Life(element) {
         this.element.keypress(f);
       },
 
+      ondrag : function(f) {
+        this._ondrag = f;
+      },
+
       clear : function() {
         this.context.clearRect(0, 0, this.width, this.height);
+      },
+
+      mouse : function(e) {
+        if(e.originalEvent.type == "mousedown") {
+          this.dragging = true;
+          this.lastX = e.screenX;
+          this.lastY = e.screenY;
+        } else if(e.originalEvent.type == "mouseup") {
+          this.dragging = false;
+          this.lastX = -1;
+          this.lastY = -1;
+        } else if(this.dragging) {
+          if(this._ondrag) {
+            this._ondrag(e.screenX-this.lastX, e.screenY-this.lastY);
+          }
+          this.lastX = e.screenX;
+          this.lastY = e.screenY;
+        }
       }
+
     },
 
     init : function(options) {
@@ -431,10 +463,10 @@ function Life(element) {
     },
 
     pan : function(px, py) {
-      this.y -= parseInt((this.translate.y+py)/this.scale);
-      this.translate.y = ((this.translate.y+py)%this.scale);
-      this.x -= parseInt((this.translate.x+px)/this.scale);
-      this.translate.x = ((this.translate.x+px)%this.scale);
+      this.y -= parseInt((this.translate.y-py)/this.scale);
+      this.translate.y = ((this.translate.y-py)%this.scale);
+      this.x -= parseInt((this.translate.x-px)/this.scale);
+      this.translate.x = ((this.translate.x-px)%this.scale);
     },
 
     zoom : function(px, py, zoom) {
@@ -474,8 +506,8 @@ function Life(element) {
   // clear canvas and draw active cells
   var redraw = function() {
     ui.canvas.clear();
-    for(var x = 0; x < camera.width; x++) {
-      for(var y = 0; y < camera.height; y++) {
+    for(var x = -1; x <= camera.width; x++) {
+      for(var y = -1; y <= camera.height; y++) {
         if(world.get(camera.x+x,camera.y+y) == 1) {
           ui.canvas.square((x*camera.scale)+camera.translate.x+0.5, (y*camera.scale)+camera.translate.y+0.5, camera.scale);
         }
@@ -526,6 +558,12 @@ function Life(element) {
       redraw();
     }
   };
+
+  // drag
+  var drag = function(x, y) {
+    camera.pan(x, y);
+    redraw();
+  }
 
   // zoom in
   var zoomin = function() {
@@ -691,6 +729,7 @@ function Life(element) {
     ui.canvas.onclick(click);
   }
   ui.canvas.onkeypress(keypress);
+  ui.canvas.ondrag(drag);
 
   ui.onzoomin(zoomin);
   ui.onzoomout(zoomout);
