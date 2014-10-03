@@ -174,7 +174,7 @@ function Life(element) {
 
       if(options.speed) {
         var s = parseInt(options.speed);
-        if(s => 1  || s <= 5) {
+        if(s >= 1  || s <= 5) {
           this.speed = s;
         }
       }
