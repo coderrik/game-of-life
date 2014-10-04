@@ -279,29 +279,8 @@ function Life(element) {
             for(var row = -1; row <=1; row++) {
               var xcoord = x+col;
               var ycoord = y+row;
-              var wrapped = false;
 
-              if(ycoord < 0) {
-                ycoord = this.height-1;
-                wrapped = true;
-              }
-
-              if(ycoord >= this.height) {
-                ycoord = 0;
-                wrapped = true;
-              }
-
-              if(xcoord < 0) {
-                xcoord = this.width-1;
-                wrapped = true;
-              }
-
-              if(xcoord >= this.width) {
-                xcoord = 0;
-                wrapped = true;
-              }
-
-              if(!wrapped) {
+              if(xcoord >= 0 && xcoord < this.width && ycoord >= 0 && ycoord < this.height) {
                 sum += this.cells[this.active][xcoord][ycoord];
               }
             }
@@ -336,11 +315,6 @@ function Life(element) {
     height : 1,
     pwidth : 1,
     pheight : 1,
-
-    x1 : 0,
-    x2 : 0,
-    y1 : 0,
-    y2 : 0,
 
     clipped : 0,
 
@@ -378,7 +352,7 @@ function Life(element) {
 
         success: function(response, status, request) {
           var data = response.split("\n");
-          var translate = {
+          var origin = {
             x : Math.round(this.width/2),
             y : Math.round(this.height/2)
           };
@@ -388,12 +362,12 @@ function Life(element) {
           };
           var y = 0;
 
-          this.clipped = 0;
+          var x1 = origin.x;
+          var y1 = origin.y;
+          var x2 = origin.x;
+          var y2 = origin.y;
 
-          this.x1 = translate.x;
-          this.y1 = translate.y;
-          this.x2 = translate.x;
-          this.y2 = translate.y;
+          this.clipped = 0;
 
           this.description = '';
           if(data[0].indexOf('#Life 1.05') == 0) {
@@ -412,14 +386,14 @@ function Life(element) {
                    this.description += data[i].substring(3);
                  } else if(data[i].charAt(0) != "#") {
                    for(var x = 0; x < data[i].length; x++) {
-                     var cellx = translate.x+P.x+x;
-                     var celly = translate.y+P.y+y;
+                     var cellx = origin.x+P.x+x;
+                     var celly = origin.y+P.y+y;
 
                      if(cellx >= 0 && cellx < this.width && celly >= 0 && celly < this.height) {
-                       if(cellx < this.x1) { this.x1 = cellx };
-                       if(cellx > this.x2) { this.x2 = cellx };
-                       if(celly < this.y1) { this.y1 = celly };
-                       if(celly > this.y2) { this.y2 = celly };
+                       if(cellx < x1) { x1 = cellx };
+                       if(cellx > x2) { x2 = cellx };
+                       if(celly < y1) { y1 = celly };
+                       if(celly > y2) { y2 = celly };
 
                        if(data[i].charAt(x) == '*') {
                          this.cells[cellx][celly] = 1;
@@ -432,8 +406,8 @@ function Life(element) {
                  }
               }
             }
-            this.pwidth = this.x2-this.x1+1;
-            this.pheight = this.y2-this.y1+1;
+            this.pwidth = x2-x1+1;
+            this.pheight = y2-y1+1;
 
             this.dimensions = this.pwidth + 'x' + this.pheight;
             this.filename = url.split('/').reverse()[0];
@@ -636,11 +610,12 @@ function Life(element) {
   // zoom camera into the pattern
   var focus = function() {
     // totally no idea how this is working !
-    camera.scale = Math.floor(Math.min(world.height/pattern.pheight,world.width/pattern.pwidth));
-    camera.width = Math.floor(world.width/camera.scale);
-    camera.height = Math.floor(world.height/camera.scale);
-    camera.x = Math.ceil((world.width-pattern.pwidth)/2)-Math.floor((camera.width-pattern.pwidth)/2);
-    camera.y = Math.ceil((world.height-pattern.pheight)/2)-Math.floor((camera.height-pattern.pheight)/2);
+    camera.scale = Math.floor(Math.min(ui.canvas.height/pattern.pheight,ui.canvas.width/pattern.pwidth));
+    camera.width = Math.floor(ui.canvas.width/camera.scale);
+    camera.height = Math.floor(ui.canvas.height/camera.scale);
+    // centre of pattern (unfortunately some patterns are not central!)
+    camera.x = parseInt(world.width/2)-parseInt(camera.width/2);
+    camera.y = parseInt(world.height/2)-parseInt(camera.height/2);
     camera.translate.x = Math.floor(((world.width)%camera.scale)/2);
     camera.translate.y = Math.floor(((world.height)%camera.scale)/2);
   };
