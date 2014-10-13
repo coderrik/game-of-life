@@ -456,26 +456,16 @@ function Life(element) {
     },
 
     zoom : function(px, py, zoom) {
-      var cellx = this.x+Math.round((px-this.translate.x)/this.scale);
-      var celly = this.y+Math.round((py-this.translate.y)/this.scale);
+      if((this.scale+zoom) > 0 && (this.scale+zoom) < parseInt(Math.max(world.height,world.width)/2)) {
+        var panx = Math.round((px-this.translate.x)/this.scale)*zoom;
+        var pany = Math.round((py-this.translate.y)/this.scale)*zoom;
 
-      var pointshiftx = this.translate.x+(px%this.scale);
-      var pointshifty = this.translate.y+(py%this.scale);
+        this.scale += zoom;
+        this.width = Math.floor(world.width/this.scale);
+        this.height = Math.floor(world.height/this.scale);
 
-      this.scale += zoom;
-      this.width = Math.floor(world.width/this.scale);
-      this.height = Math.floor(world.height/this.scale);
-
-      //   if(zoom > 0 ) {
-      //      this.translate.x = (this.translate.x*zoom)%this.scale;
-      //      this.translate.y = (this.translate.y*zoom)%this.scale;
-      //    } else {
-      //      this.translate.x = Math.round(pointshiftx/Math.abs(zoom));
-      //      this.translate.y = Math.round(pointshifty/Math.abs(zoom));
-      //    }
-
-      //    this.x = cellx-Math.round((px)/this.scale);
-      //    this.y = celly-Math.round((py)/this.scale);
+        this.pan(panx, pany);
+      }
     }
 
   };
@@ -579,6 +569,7 @@ function Life(element) {
   // redraw loaded pattern or clear cells
   var reset = function() {
     world.load(pattern);
+    focus();
     ui.stats(pattern.filename, pattern.filesize, pattern.dimensions, pattern.author, pattern.name, pattern.description);
     redraw();
   };
@@ -730,14 +721,14 @@ function Life(element) {
       ui.canvas.widget
     ).append(
       ' '
-//    ).append(
-//      $('<div class="btn-group-vertical btn-group-sm">').append(
-//        ui.button_zoomin
-//      ).append(
-//        ui.button_zoomout
-//      )
-//    ).append( 
-//      ' '
+    ).append(
+      $('<div style="vertical-align: top" class="btn-group-vertical btn-group-sm">').append(
+        ui.button_zoomin
+      ).append(
+        ui.button_zoomout
+      )
+    ).append( 
+      ' '
     ).append(
       ui.spinner
     )
