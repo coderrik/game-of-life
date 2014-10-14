@@ -25,9 +25,13 @@ function Life(element) {
     slider : null,
     spinner : null,
 
+    _interval_zoom : null,
+    _onzoominfn : null,
+    _onzoomoutfn : null,
+
     stats_filename : null,
     stats_filesize : null,
-    stats_diemnsions : null,
+    stats_dimensions : null,
     stats_author : null,
     stats_name : null,
     stats_description : null,
@@ -163,7 +167,10 @@ function Life(element) {
       if(!options.stop) { this.button_stop.hide(); }
 
       this.button_zoomin = $('<button type="button" class="btn btn-default"><span class="glyphicon glyphicon-plus"></span></button>');
+      this.button_zoomin.mousedown($.proxy(this._onzoomindown, this));
       this.button_zoomout = $('<button type="button" class="btn btn-default"><span class="glyphicon glyphicon-minus"></span></button>');
+      this.button_zoomout.mousedown($.proxy(this._onzoomoutdown, this));
+      $(window).mouseup($.proxy(this._onzoomup,this));
 
       this.stats_filename = $('<span/>');
       this.stats_filesize = $('<span/>');
@@ -194,9 +201,54 @@ function Life(element) {
 
     onreset : function(f) { this.button_reset.click(f); },
 
-    onzoomin : function(f) { this.button_zoomin.click(f); },
+    onzoomin : function(f) {
+      this._onzoominfn = f;
+    },
 
-    onzoomout : function(f) { this.button_zoomout.click(f); },
+    _onzoomin : function(e) {
+      if(this._onzoominfn) {
+        this._onzoominfn();
+      }
+    },
+
+    _onzoomindown : function(e) {
+      if(this._onzoominfn) {
+        if(this._interval_zoom != null) {
+          clearInterval(this._interval_zoom);
+        }
+        this._onzoominfn();
+        this._interval_zoom = setInterval(this._onzoominfn, 250);
+      }
+    },
+
+    onzoomout : function(f) {
+      this._onzoomoutfn = f;
+    },
+
+    _onzoomout : function(e) {
+      if(this._onzoomoutfn) {
+        this._onzoomoutfn();
+      }
+    },
+
+    _onzoomoutdown : function(e) {
+      if(this._onzoomoutfn) {
+        if(this._outterval_zoom != null) {
+          clearInterval(this._interval_zoom);
+        }
+        this._onzoomoutfn();
+        this._interval_zoom = setInterval(this._onzoomoutfn, 250);
+      }
+    },
+
+    _onzoomup : function(e) {
+      if(this._onzoomoutfn) {
+        if(this._interval_zoom != null) {
+          clearInterval(this._interval_zoom);
+        }
+        this._interval_zoom = null;
+      }
+    },
 
     stats : function(filename, filesize, dimensions, author, name, description) {
       this.stats_filename.html(filename);
@@ -711,8 +763,18 @@ function Life(element) {
     ui.canvas.ondrag(drag);
   }
 
-  ui.onzoomin(zoomin);
-  ui.onzoomout(zoomout);
+  var div_zoom = '';
+  if($(element).attr('data-zoom-show') != 'false') {
+    ui.onzoomin(zoomin);
+    ui.onzoomout(zoomout);
+    div_zoom = $('<div style="vertical-align: top" class="btn-group-vertical btn-group-sm">').append(
+        ui.button_zoomin
+      ).append(
+        ui.button_zoomout
+      ).append(
+        '&nbsp;'
+      );
+  }
 
   div_row = $('<div class="row"></div>');
   div_row.append(
@@ -722,17 +784,15 @@ function Life(element) {
     ).append(
       ' '
     ).append(
-      $('<div style="vertical-align: top" class="btn-group-vertical btn-group-sm">').append(
-        ui.button_zoomin
-      ).append(
-        ui.button_zoomout
-      )
-    ).append( 
+      div_zoom
+    ).append(
       ' '
     ).append(
       ui.spinner
     )
   );
+
+  $(element).append(div_row);
 
   // stats components
   if($(element).attr('data-stats-show') != 'false') {
