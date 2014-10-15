@@ -35,6 +35,7 @@ function Life(element) {
     stats_author : null,
     stats_name : null,
     stats_description : null,
+    stats_generation : null,
 
     speed : 3,
 
@@ -178,6 +179,7 @@ function Life(element) {
       this.stats_author = $('<span/>');
       this.stats_name = $('<span/>');
       this.stats_description = $('<span/>');
+      this.stats_generation = $('<span/>');
 
       if(options.speed) {
         var s = parseInt(options.speed);
@@ -250,13 +252,18 @@ function Life(element) {
       }
     },
 
-    stats : function(filename, filesize, dimensions, author, name, description) {
+    generation : function(it) {
+      this.stats_generation.html(it);
+    },
+
+    stats : function(filename, filesize, dimensions, author, name, description, generation) {
       this.stats_filename.html(filename);
       this.stats_filesize.html(filesize);
       this.stats_dimensions.html(dimensions);
       this.stats_author.html(author);
       this.stats_name.html(name);
       this.stats_description.html(description);
+      this.stats_generation.html(generation);
     },
 
     error : function(message) {
@@ -269,10 +276,11 @@ function Life(element) {
   var DEFAULT_WORLD_WIDTH = 50;
   var DEFAULT_WORLD_HEIGHT = 50;
   var world = {
-    cells  : [],
-    width  : DEFAULT_WORLD_WIDTH,
-    height : DEFAULT_WORLD_HEIGHT,
-    active : 0,
+    cells     : [],
+    width     : DEFAULT_WORLD_WIDTH,
+    height    : DEFAULT_WORLD_HEIGHT,
+    active    : 0,
+    generation : 0,
 
     init   : function(w, h) {
       for(var a = 0; a < 2; a++) {
@@ -286,6 +294,7 @@ function Life(element) {
       }
       this.width = w;
       this.height = h;
+      this.generation = 0;
     },
 
     get : function(x, y) {
@@ -349,6 +358,7 @@ function Life(element) {
       }
 
       this.active = 1-this.active;
+      this.generation++;
     },
 
     load : function(p) {
@@ -357,6 +367,7 @@ function Life(element) {
           this.put(x, y, p.get(x, y));
         }
       }
+      this.generation = 0;
     },
   };
 
@@ -552,6 +563,7 @@ function Life(element) {
         }
       }
     }
+    ui.generation(world.generation);
   };
 
   // start animation
@@ -619,7 +631,7 @@ function Life(element) {
   // clear all cells
   var clear = function() {
     world.clear();
-    ui.stats('','','','','','');
+    ui.stats('','','','','','','0');
     redraw();
   };
 
@@ -633,7 +645,7 @@ function Life(element) {
   var reset = function() {
     world.load(pattern);
     focus();
-    ui.stats(pattern.filename, pattern.filesize, pattern.dimensions, pattern.author, pattern.name, pattern.description);
+    ui.stats(pattern.filename, pattern.filesize, pattern.dimensions, pattern.author, pattern.name, pattern.description, '0');
     redraw();
   };
 
@@ -681,7 +693,7 @@ function Life(element) {
       function(p) {
         world.load(p);
         focus();
-        ui.stats(pattern.filename, pattern.filesize, pattern.dimensions, pattern.author, pattern.name, pattern.description);
+        ui.stats(pattern.filename, pattern.filesize, pattern.dimensions, pattern.author, pattern.name, pattern.description, '0');
         if(p.clipped > 0) {
           ui.flash.html('Warning: ' + p.clipped + ' point' + (p.clipped == 1 ? '' : 's') + ' clipped');
           ui.flash.show();
@@ -838,6 +850,12 @@ function Life(element) {
             $('<td/>').append('Author:')
           ).append(
             $('<td/>').append(ui.stats_author)
+          )
+        ).append(
+          $('<tr/>').append(
+            $('<td/>').append('Generation:')
+          ).append(
+            $('<td/>').append(ui.stats_generation)
           )
         ).append(
           $('<tr/>').append(
