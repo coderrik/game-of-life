@@ -81,17 +81,17 @@ function Life(element) {
           this.height = h;
         }
 
-       this.element = $('<canvas tabindex="1" style="background-color: grey" width="' + this.width + '" height="' + this.height + '"></canvas>');
-       this.element.mousedown($.proxy(this.mouse,this));
-       this.element.mousemove($.proxy(this.mouse, this));
-       $(window).mouseup($.proxy(this.mouse,this));
-       this.element.click($.proxy(this.click, this));
+        this.element = $('<canvas tabindex="1" style="background-color: grey" width="' + this.width + '" height="' + this.height + '"></canvas>');
+        this.element.mousedown($.proxy(this.mouse,this));
+        this.element.mousemove($.proxy(this.mouse, this));
+        $(window).mouseup($.proxy(this.mouse,this));
+        this.element.click($.proxy(this.click, this));
 
-       this.widget = ui.canvas.element[0];
+        this.widget = ui.canvas.element[0];
 
-       this.context = this.widget.getContext('2d');
-       this.context.shadowBlur = 0;
-       this.context.fillStyle='red';
+        this.context = this.widget.getContext('2d');
+        this.context.shadowBlur = 0;
+        this.context.fillStyle='red';
       },
 
       square : function(x, y, size) {
