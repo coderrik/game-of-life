@@ -490,7 +490,7 @@ function Life(element) {
             } else {
               this.filesize = '';
             }
-            this.description = this.description.replace(/\r/,'').replace(/[http:\/\/]*(www\.[A-Z|a-z|-|0-9]+\.[A-Z|a-z|0-9|\(|\)_|\-|\/|\?|\.|\=]+)/,' <a target="_blank" href="http://\$1">\$1</a>');
+            this.description = this.description.replace(/\r/g,'').replace(/[http:\/\/]*(www\.[A-Z|a-z|-|0-9]+\.[A-Z|a-z|0-9|\(|\)_|\-|\/|\?|\.|\=]+)/,' <a target="_blank" href="http://\$1">\$1</a>');
 
             okcb(this);
           } else {
