@@ -687,7 +687,7 @@ function Life(element) {
   };
 
   // load pattern from url
-  var load_pattern = function(url) {
+  var load_pattern = function(url, cb) {
     pattern.init(world.width, world.height);
     pattern.load(url,
       function(p) {
@@ -697,6 +697,9 @@ function Life(element) {
         if(p.clipped > 0) {
           ui.flash.html('Warning: ' + p.clipped + ' point' + (p.clipped == 1 ? '' : 's') + ' clipped');
           ui.flash.show();
+        }
+        if(cb) {
+          window[cb](pattern.name, pattern.filename);
         }
         redraw();
       },
@@ -887,9 +890,9 @@ function Life(element) {
 
   // load pattern or default world
   if($(element).attr('data-url')) {
-    load_pattern($(element).attr('data-url'))
+    load_pattern($(element).attr('data-url'), $(element).attr('data-load-callback'))
   } else if($(element).attr('data-param')) {
-    load_pattern(parameter($(element).attr('data-param')));
+    load_pattern(parameter($(element).attr('data-param')), $(element).attr('data-load-callback'));
   } else {
     camera.scale = 20;
     camera.width = Math.floor(ui.canvas.width/camera.scale);

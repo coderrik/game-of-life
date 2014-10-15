@@ -28,6 +28,15 @@
 
 <title>Game of Life - Pattern</title>
 
+<script>
+function onPatternLoad(name, filename) {
+  if(name) {
+    $('#title').html(name);
+  } else if(filename) {
+    $('#title').html(name);
+  }
+};
+</script>
 </head>
 
 <body>
@@ -65,10 +74,10 @@
 
 <div class="container">
   <div class="page-header">
-    <h1>Patterns</h1>
+    <h1><span id="title">Patterns</span></h1>
   </div>
 
-  <div id="pattern" class="life" data-randomize-show="false" data-stats-show="true" data-wrap="true" data-editable="false" data-param="pattern" data-clear-show="false"></div>
+  <div id="pattern" class="life" data-randomize-show="false" data-stats-show="true" data-wrap="true" data-editable="false" data-param="pattern" data-clear-show="false" data-load-callback="onPatternLoad"></div>
 </div>
 
 </body>
