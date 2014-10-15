@@ -419,6 +419,9 @@ function Life(element) {
           var x2 = origin.x;
           var y2 = origin.y;
 
+          var maxx = 0;
+          var maxy = 0;
+
           this.clipped = 0;
 
           this.description = '';
@@ -447,6 +450,14 @@ function Life(element) {
                        if(celly < y1) { y1 = celly };
                        if(celly > y2) { y2 = celly };
 
+                       if(Math.abs(x+P.x) > maxx) {
+                         maxx = Math.abs(x+P.x);
+                       }
+
+                       if(Math.abs(y+P.y) > maxy) {
+                         maxy = Math.abs(y+P.y);
+                       }
+
                        if(data[i].charAt(x) == '*') {
                          this.cells[cellx][celly] = 1;
                        }
@@ -458,8 +469,8 @@ function Life(element) {
                  }
               }
             }
-            this.pwidth = x2-x1+1;
-            this.pheight = y2-y1+1;
+            this.pwidth = (maxx*2)+((x2-x1+1)%2);
+            this.pheight = (maxy*2)+((y2-y1+1)%2);
 
             this.dimensions = this.pwidth + 'x' + this.pheight;
             this.filename = url.split('/').reverse()[0];
