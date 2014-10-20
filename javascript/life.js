@@ -1,13 +1,7 @@
 function Life(element) {
 
-  // default bootstrap environment
-  var DEFAULT_CANVAS_ENVIRONMENT = 'md';
-
-  // canvas widths for different devices
-  var DEFAULT_CANVAS_WIDTHS = { 'xs' : 320, 'sm' : 320, 'md' : 480, 'lg' : 480 };
-
-  // canvas heights for different devices
-  var DEFAULT_CANVAS_HEIGHTS = { 'xs' : 240, 'sm' : 240, 'md' : 360, 'lg' : 360 };
+  var DEFAULT_CANVAS_WIDTH = 480;
+  var DEFAULT_CANVAS_HEIGHT = 360;
 
   // timer interval
   var interval = null;
@@ -43,8 +37,8 @@ function Life(element) {
       widget  : null,
       element : null,
       context : null,
-      width   : DEFAULT_CANVAS_WIDTHS[DEFAULT_CANVAS_ENVIRONMENT],
-      height  : DEFAULT_CANVAS_HEIGHTS[DEFAULT_CANVAS_ENVIRONMENT],
+      width   : DEFAULT_CANVAS_WIDTH,
+      height  : DEFAULT_CANVAS_HEIGHT,
 
       dragging : false,
       dragged : false,
@@ -56,35 +50,32 @@ function Life(element) {
 
       init : function(w, h) {
         if(w == null || h == null) {
-          var environments = ['xs', 'sm', 'md', 'lg'];
-          var environment = null;
-
-          var element = $('<div>');
-          element.appendTo($('body'));
-
-          for(var i = environments.length - 1; i >= 0 && environment == null; i--) {
-            element.addClass('hidden-'+environments[i]);
-            if(element.is(':hidden')) {
-              element.remove();
-              environment = environments[i];
-            }
+          if(screen.width > 1024) {
+            this.width = 480;
+            this.height = 360;
+          } else if(screen.width > 480) {
+            this.width = 400;
+            this.height = 300;
+          } else {
+            this.width = screen.width - 32;
+            this.height = screen.width - 32;
           }
-
-          if(environment == null) {
-            environment = DEFAULT_CANVAS_ENVIRONMENT;
-          }
-
-          this.width = DEFAULT_CANVAS_WIDTHS[environment];
-          this.height = DEFAULT_CANVAS_HEIGHTS[environment];
         } else {
           this.width = w;
           this.height = h;
         }
 
         this.element = $('<canvas tabindex="1" style="background-color: grey" width="' + this.width + '" height="' + this.height + '"></canvas>');
-        this.element.mousedown($.proxy(this.mouse,this));
-        this.element.mousemove($.proxy(this.mouse, this));
-        $(window).mouseup($.proxy(this.mouse,this));
+
+        if("ontouchstartXXX" in document) {
+          this.element.bind('touchstart',$.proxy(this.mouse,this));
+          this.element.bind('touchmove', $.proxy(this.mouse, this));
+          $(window).bind('touchend', $.proxy(this.mouse,this));
+        } else {
+          this.element.mousedown($.proxy(this.mouse,this));
+          this.element.mousemove($.proxy(this.mouse, this));
+          $(window).mouseup($.proxy(this.mouse,this));
+        }
         this.element.click($.proxy(this.click, this));
 
         this.widget = ui.canvas.element[0];
@@ -130,17 +121,34 @@ function Life(element) {
           this.dragged = false;
           this.lastX = e.screenX;
           this.lastY = e.screenY;
-        } else if(e.originalEvent.type == "mouseup") {
+        } else if(e.originalEvent.type == "touchstartXXX") {
+          this.dragging = true;
+          this.dragged = false;
+          this.lastX = e.originalEvent.touches[0].screenX;
+          this.lastY = e.originalEvent.touches[0].screenY;
+        } else if(e.originalEvent.type == "mouseup" || e.originalEvent.type == "touchendXXX") {
           this.dragging = false;
           this.lastX = -1;
           this.lastY = -1;
-        } else if(this.dragging) {
-          if(this._ondrag) {
-            this.dragged = true;
-            this._ondrag(e.screenX-this.lastX, e.screenY-this.lastY);
+        } else if(e.originalEvent.type == "mousemove") {
+          if(this.dragging) {
+            if(this._ondrag) {
+              this.dragged = true;
+              this._ondrag(e.screenX-this.lastX, e.screenY-this.lastY);
+            }
+            this.lastX = e.screenX;
+            this.lastY = e.screenY;
           }
-          this.lastX = e.screenX;
-          this.lastY = e.screenY;
+        } else if(e.originalEvent.type == "touchmoveXXX") {
+          if(this.dragging) {
+            if(this._ondrag) {
+              this.dragged = true;
+              this._ondrag(e.originalEvent.touches[0].screenX-this.lastX, e.originalEvent.touches[0].screenY-this.lastY);
+            }
+            this.lastX = e.originalEvent.touches[0].screenX;
+            this.lastY = e.originalEvent.touches[0].screenY;
+            e.preventDefault();
+          }
         }
       }
 
