@@ -5,5 +5,5 @@ This is a primer for [Conway's Game of Life](https://en.wikipedia.org/wiki/Conwa
 
 Check it out here: https://coderrik.github.io/game-of-life/
 
-![Screenshot](https://coderrik.github.io/game-of-life/images/screenshot.png)
+![Screenshot](images/screenshot.png)
 
